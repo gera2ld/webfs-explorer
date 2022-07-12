@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" hidden>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script type="module">
+			import { setup, apply } from 'https://cdn.skypack.dev/twind/shim';
+			import * as colors from 'https://cdn.skypack.dev/twind/colors';
+
+			setup({
+				theme: {
+					extend: {
+						colors
+					}
+				},
+				preflight: (preflight) => ({
+					...preflight,
+					body: apply`bg(white dark:gray-800) text-gray(800 dark:300)`,
+					a: apply`text-blue(400 hover:600)`
+				})
+			});
+		</script>
+		<script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
+		<script>
+			window.ipfsPromise = IpfsCore.create({
+				// preload: {
+				// 	addresses: ['/ip4/127.0.0.1/tcp/8080']
+				// }
+			}).then((ipfs) => (window.ipfs = ipfs));
+		</script>
+		%sveltekit.head%
+	</head>
+	<body>
+		<div>%sveltekit.body%</div>
+	</body>
+</html>
