@@ -24,10 +24,14 @@
 		<script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
 		<script>
 			window.ipfsPromise = IpfsCore.create({
-				// preload: {
-				// 	addresses: ['/ip4/127.0.0.1/tcp/8080']
-				// }
-			}).then((ipfs) => (window.ipfs = ipfs));
+				preload: {
+					// addresses: ['/dns4/ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWGVw5nuix8Hz3cppd6FAtBd4omQxoYH46nW8us527VPTa']
+				}
+			}).then((ipfs) => {
+				window.ipfs = ipfs;
+				ipfs.swarm.connect('/dns4/ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWGVw5nuix8Hz3cppd6FAtBd4omQxoYH46nW8us527VPTa');
+				return ipfs;
+			});
 		</script>
 		%sveltekit.head%
 	</head>
