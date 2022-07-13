@@ -15,5 +15,7 @@ declare global {
 	interface Window {
 		IpfsCore: IPFSCore;
 		ipfsPromise: Promise<IPFSCore.IPFS>;
+		monaco: any;
+		monacoPromise: Promise<any>;
 	}
 }

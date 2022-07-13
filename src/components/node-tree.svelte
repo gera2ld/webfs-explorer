@@ -34,7 +34,11 @@
 				</svg>
 			{:else}
 				<svg viewBox="0 0 16 16" class="w-4 h-4">
-					<path d="M4 3v1h8v-1zM4 6v1h4v-1zM4 9v1h8v-1zM4 12v1h6v-1z" stroke="none" fill="currentColor" />
+					<path
+						d="M4 3v1h8v-1zM4 6v1h4v-1zM4 9v1h8v-1zM4 12v1h6v-1z"
+						stroke="none"
+						fill="currentColor"
+					/>
 				</svg>
 			{/if}
 			<span>{node.name}{node.type === 'directory' ? '/' : ''}</span>

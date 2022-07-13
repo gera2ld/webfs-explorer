@@ -85,7 +85,7 @@ export class IPFSProvider {
 		if (node.type !== 'file') return;
 		console.log('Load file:', node.path);
 		const bytes = await this.loadFile(`/ipfs/${node.cid}`);
-		console.log('Loaded file:', node.path, bytes);
+		console.log('Loaded file:', node.path);
 		const decoder = new TextDecoder();
 		node.content = decoder.decode(bytes);
 	}
