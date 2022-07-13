@@ -10,16 +10,36 @@
 	let active: FSNode | undefined;
 	let inputPath: string = '';
 	let loading = true;
+	let activeContent: { type: string; data: string | null } | undefined;
+
+	$: activeContent = active && getContent(active);
+
+	function getContent(node: FSNode) {
+		if (node.type === 'directory') return { type: 'directory', data: null };
+		if (!node.content) return;
+		const decoder = new TextDecoder();
+		return {
+			type: 'text',
+			data: decoder.decode(node.content)
+		};
+	}
 
 	async function openPath(path: string) {
 		if (loading) return;
 		loading = true;
 		active = undefined;
+		let ipfsPath: string;
+		if (/^\w+$/.test(path)) ipfsPath = `/ipfs/${path}`;
+		else if (path.includes('.') && !path.includes('/')) ipfsPath = `/ipns/${path}`;
+		else ipfsPath = path;
 		try {
-			await provider.openPath(path);
+			await provider.openPath(ipfsPath);
 			await provider.toggleNode(provider.root!);
 			root = provider.root;
 			inputPath = root?.cid?.toString() || '';
+			console.log('root CID:', inputPath);
+		} catch (err) {
+			console.error(err);
 		} finally {
 			loading = false;
 		}
@@ -29,7 +49,9 @@
 		const ipfs = await window.ipfsPromise;
 		provider = new IPFSProvider(ipfs);
 		loading = false;
-		await openPath('/ipns/gera2ld.crypto');
+		const params = new URLSearchParams(window.location.hash.slice(1));
+		const path = params.get('p') || 'gera2ld.crypto';
+		await openPath(path);
 	}
 
 	async function setActive(node: FSNode) {
@@ -45,11 +67,7 @@
 
 	function handleOpen(e: SubmitEvent) {
 		e.preventDefault();
-		let ipfsPath: string;
-		if (/^\w+$/.test(inputPath)) ipfsPath = `/ipfs/${inputPath}`;
-		else if (inputPath.includes('.') && !inputPath.includes('/')) ipfsPath = `/ipns/${inputPath}`;
-		else ipfsPath = inputPath;
-		openPath(ipfsPath);
+		openPath(inputPath);
 	}
 
 	onMount(main);
@@ -75,12 +93,14 @@
 			{/if}
 		</div>
 		<div class="flex-1">
-			{#if active?.type === 'file'}
-				<MonacoEditor name={active.name} value={active.content || ''} />
-			{:else}
+			{#if loading || (active && !active.children && !active.content)}
+				<div class="h-full flex items-center justify-center text-gray-400">Loading...</div>
+			{:else if !active || active.children}
 				<div class="h-full flex items-center justify-center text-gray-400">
-					{loading ? 'Loading...' : 'Pick a file to view / edit its content'}
+					Pick a file to view / edit its content
 				</div>
+			{:else if activeContent?.type === 'text'}
+				<MonacoEditor name={active.name} value={activeContent.data || ''} />
 			{/if}
 		</div>
 	</div>

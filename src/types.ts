@@ -5,5 +5,6 @@ export interface FSNode {
 	name: string;
 	size: number;
 	children?: FSNode[];
-	content?: string;
+	content?: Uint8Array;
+	expand?: boolean;
 }

@@ -84,17 +84,13 @@ export class IPFSProvider {
 	async loadNode(node: FSNode) {
 		if (node.type !== 'file') return;
 		console.log('Load file:', node.path);
-		const bytes = await this.loadFile(`/ipfs/${node.cid}`);
+		node.content = await this.loadFile(`/ipfs/${node.cid}`);
 		console.log('Loaded file:', node.path);
-		const decoder = new TextDecoder();
-		node.content = decoder.decode(bytes);
 	}
 
 	async toggleNode(node: FSNode) {
 		if (node.type !== 'directory') return;
-		if (node.children) {
-			node.children = undefined;
-		} else {
+		if (!node.children) {
 			const children: FSNode[] = [];
 			for await (const { name } of this.ipfs.files.ls(node.path)) {
 				children.push(await this.stat(`${node.path}/${name}`, name));
@@ -102,5 +98,6 @@ export class IPFSProvider {
 			node.children = children;
 			console.log('loaded dir:', node.path);
 		}
+		node.expand = !node.expand;
 	}
 }

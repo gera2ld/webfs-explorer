@@ -1,5 +1,6 @@
 /// <reference types="@sveltejs/kit" />
 import * as IPFSCore from 'ipfs-core';
+import * as Monaco from 'monaco-editor';
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
@@ -15,7 +16,7 @@ declare global {
 	interface Window {
 		IpfsCore: IPFSCore;
 		ipfsPromise: Promise<IPFSCore.IPFS>;
-		monaco: any;
-		monacoPromise: Promise<any>;
+		monaco: Monaco;
+		monacoPromise: Promise<Monaco>;
 	}
 }

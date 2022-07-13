@@ -8,7 +8,7 @@
 	function getNodes(node: FSNode, level = 0) {
 		const nodes: Array<{ node: FSNode; level: number }> = [
 			{ node, level },
-			...(node.children || []).flatMap((child) => getNodes(child, level + 1))
+			...((node.expand && node.children) || []).flatMap((child) => getNodes(child, level + 1))
 		];
 		return nodes;
 	}
@@ -28,7 +28,7 @@
 			{#if node.type === 'directory'}
 				<svg
 					viewBox="0 0 16 16"
-					class={`w-4 h-4 transition-transform ${node.children ? 'rotate-90' : ''}`}
+					class={`w-4 h-4 transition-transform ${node.expand ? 'rotate-90' : ''}`}
 				>
 					<path d="M6 2l6 6l-6 6z" stroke="none" fill="currentColor" />
 				</svg>
