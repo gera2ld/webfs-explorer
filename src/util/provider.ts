@@ -21,7 +21,7 @@ export class IPFSProvider {
 
 	async resetRoot() {
 		try {
-			await this.ipfs.files.rm(this.rootDir, { recursive: true });
+			await this.ipfs.files.rm(this.rootDir, { recursive: true, cidVersion: 1 });
 			console.log('reset root');
 		} catch {
 			// ignore
@@ -40,11 +40,11 @@ export class IPFSProvider {
 		console.log('loaded path:', root);
 		await this.resetRoot();
 		if (root.type === 'file') {
-			await this.ipfs.files.mkdir(this.rootDir);
-			await this.ipfs.files.cp(resolvedPath, this.rootDir + '/file');
+			await this.ipfs.files.mkdir(this.rootDir, { cidVersion: 1 });
+			await this.ipfs.files.cp(resolvedPath, this.rootDir + '/file', { cidVersion: 1 });
 			console.log('loaded file', resolvedPath);
 		} else {
-			await this.ipfs.files.cp(resolvedPath, this.rootDir);
+			await this.ipfs.files.cp(resolvedPath, this.rootDir, { cidVersion: 1 });
 			console.log('loaded directory:', resolvedPath);
 		}
 		this.state.root = await this.stat(this.rootDir, 'root');
