@@ -2,26 +2,22 @@
 	import { onMount } from 'svelte';
 	import NodeTree from '../components/node-tree.svelte';
 	import MonacoEditor from '../components/monaco-editor.svelte';
-	import type { FSNode } from '../types';
-	import { IPFSProvider } from '../provider';
+	import ImageViewer from '../components/image-viewer.svelte';
+	import type { FSNode, FileData } from '../types';
+	import { IPFSProvider } from '../util/provider';
+	import { detectFile } from '../util/file-type';
 
 	let provider: IPFSProvider;
 	let root: FSNode | undefined;
 	let active: FSNode | undefined;
 	let inputPath: string = '';
 	let loading = true;
-	let activeContent: { type: string; data: string | null } | undefined;
 
 	$: activeContent = active && getContent(active);
 
-	function getContent(node: FSNode) {
-		if (node.type === 'directory') return { type: 'directory', data: null };
-		if (!node.content) return;
-		const decoder = new TextDecoder();
-		return {
-			type: 'text',
-			data: decoder.decode(node.content)
-		};
+	function getContent(node: FSNode): FileData | undefined {
+		if (node.type === 'directory' && node.children) return { type: 'directory' };
+		if (node.content) return detectFile(node.name, node.content);
 	}
 
 	async function openPath(path: string) {
@@ -93,14 +89,18 @@
 			{/if}
 		</div>
 		<div class="flex-1">
-			{#if loading || (active && !active.children && !active.content)}
+			{#if loading || (active && !activeContent)}
 				<div class="h-full flex items-center justify-center text-gray-400">Loading...</div>
-			{:else if !active || active.children}
+			{:else if !activeContent || activeContent.type === 'directory'}
 				<div class="h-full flex items-center justify-center text-gray-400">
 					Pick a file to view / edit its content
 				</div>
-			{:else if activeContent?.type === 'text'}
-				<MonacoEditor name={active.name} value={activeContent.data || ''} />
+			{:else if activeContent.type === 'text'}
+				<MonacoEditor language={activeContent.language} value={activeContent.content} />
+			{:else if activeContent.type === 'image'}
+				<ImageViewer name={active?.name} content={activeContent.content} />
+			{:else}
+				Unsupported file: {active?.name}
 			{/if}
 		</div>
 	</div>

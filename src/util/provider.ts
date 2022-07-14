@@ -1,5 +1,5 @@
 import type { IPFS } from 'ipfs-core';
-import type { FSNode } from './types';
+import type { FSNode } from '../types';
 
 export class IPFSProvider {
 	private state: {
