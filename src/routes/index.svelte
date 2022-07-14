@@ -62,8 +62,13 @@
 		provider = new IPFSProvider(ipfs);
 		loading = false;
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		const path = params.get('p') || 'gera2ld.crypto';
-		await openPath(path, params.get('n'));
+		let path = params.get('p');
+		let name = params.get('n');
+		if (!path) {
+			path = 'bafkreialjestm2klnr3hiunodfns2x6lcxxrwrvrwrza5pdgbhqryis454';
+			name ||= 'duck.png';
+		}
+		await openPath(path, name);
 	}
 
 	async function setActive(node: FSNode, toggle?: boolean) {
