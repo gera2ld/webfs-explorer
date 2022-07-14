@@ -20,19 +20,35 @@
 		if (node.content) return detectFile(node.name, node.content);
 	}
 
-	async function openPath(path: string) {
+	/**
+	 * Supported paths:
+	 * - CID / /ipfs/CID
+	 * - DOMAIN / /ipns/DOMAIN
+	 * - CID:path/to/file / /ipfs/CID/path/to/file
+	 * - DOMAIN:path/to/file / /ipns/DOMAIN/path/to/file
+	 */
+	async function openPath(path: string, name?: string) {
 		if (loading) return;
 		loading = true;
 		active = undefined;
 		let ipfsPath: string;
-		if (/^\w+$/.test(path)) ipfsPath = `/ipfs/${path}`;
-		else if (path.includes('.') && !path.includes('/')) ipfsPath = `/ipns/${path}`;
-		else ipfsPath = path;
+		let activePath: string;
+		if (path.includes(':')) {
+			[ipfsPath, activePath] = path.split(':');
+		} else if (path.startsWith('/')) {
+			const parts = path.split('/');
+			ipfsPath = parts.slice(0, 3).join('/');
+			activePath = parts.slice(3).join('/');
+		} else {
+			ipfsPath = path;
+		}
+		if (/^\w+$/.test(ipfsPath)) ipfsPath = `/ipfs/${ipfsPath}`;
+		else if (ipfsPath.includes('.') && !ipfsPath.includes('/')) ipfsPath = `/ipns/${ipfsPath}`;
 		try {
-			await provider.openPath(ipfsPath);
-			await provider.toggleNode(provider.root!);
+			const rootPath = await provider.openPath(ipfsPath, name);
 			root = provider.root;
 			inputPath = root?.cid?.toString() || '';
+			setActive(await provider.setActivePath(activePath ?? rootPath), true);
 			console.log('root CID:', inputPath);
 		} catch (err) {
 			console.error(err);
@@ -47,17 +63,23 @@
 		loading = false;
 		const params = new URLSearchParams(window.location.hash.slice(1));
 		const path = params.get('p') || 'gera2ld.crypto';
-		await openPath(path);
+		await openPath(path, params.get('n'));
 	}
 
-	async function setActive(node: FSNode) {
+	async function setActive(node: FSNode, toggle?: boolean) {
+		console.log('setActive:', node.path);
 		active = node;
 		if (node.type === 'file') {
 			await provider.loadNode(node);
-			active = active;
 		} else {
-			await provider.toggleNode(node);
+			await provider.toggleNode(node, toggle);
 			root = root;
+		}
+		active = active;
+		if (root) {
+			const params = new URLSearchParams(window.location.hash.slice(1));
+			params.set('p', [root.cid.toString(), node.path].filter(Boolean).join(':'));
+			window.location.hash = params.toString();
 		}
 	}
 

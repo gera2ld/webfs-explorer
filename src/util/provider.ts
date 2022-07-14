@@ -28,7 +28,7 @@ export class IPFSProvider {
 		}
 	}
 
-	async openPath(ipfsPath: string) {
+	async openPath(ipfsPath: string, name?: string) {
 		console.log('resolve path:', ipfsPath);
 		const resolvedPath = await this.ipfs.resolve(ipfsPath);
 		console.log('resolved:', resolvedPath);
@@ -36,30 +36,55 @@ export class IPFSProvider {
 			path: ipfsPath,
 			resolvedPath
 		};
-		const root = await this.stat(resolvedPath);
+		const root = await this.internalStat(resolvedPath);
 		console.log('loaded path:', root);
 		await this.resetRoot();
+		let activePath = '';
 		if (root.type === 'file') {
+			name ||= 'file';
 			await this.ipfs.files.mkdir(this.rootDir, { cidVersion: 1 });
-			await this.ipfs.files.cp(resolvedPath, this.rootDir + '/file', { cidVersion: 1 });
+			await this.ipfs.files.cp(resolvedPath, this.rootDir + '/' + name, { cidVersion: 1 });
+			activePath = name;
 			console.log('loaded file', resolvedPath);
 		} else {
 			await this.ipfs.files.cp(resolvedPath, this.rootDir, { cidVersion: 1 });
 			console.log('loaded directory:', resolvedPath);
 		}
-		this.state.root = await this.stat(this.rootDir, 'root');
+		this.state.root = await this.stat('', 'root');
 		console.log('root ready:', this.state.root);
+		return activePath;
 	}
 
-	async stat(filePath: string, name = 'noname') {
+	async setActivePath(filePath: string) {
+		console.log('active path:', filePath);
+		const parts = filePath.split('/').filter(Boolean);
+		let node = this.root;
+		for (const part of parts) {
+			if (!node) break;
+			await this.toggleNode(node, true);
+			const child = part && node?.children?.find((child) => child.name === part);
+			if (!child) break;
+			node = child;
+		}
+		return node;
+	}
+
+	async stat(relPath: string, name = 'noname') {
+		const node = await this.internalStat(this.rootDir + relPath, name);
+		return {
+			...node,
+			path: relPath
+		};
+	}
+
+	private async internalStat(filePath: string, name = 'noname') {
 		const stat = await this.ipfs.files.stat(filePath);
 		return {
 			name,
-			path: filePath,
 			cid: stat.cid.toString(),
 			type: stat.type,
 			size: stat.size
-		} as FSNode;
+		};
 	}
 
 	private mergeUint8Array(arrays: Uint8Array[]) {
@@ -88,16 +113,17 @@ export class IPFSProvider {
 		console.log('Loaded file:', node.path);
 	}
 
-	async toggleNode(node: FSNode) {
+	async toggleNode(node: FSNode, expand?: boolean) {
 		if (node.type !== 'directory') return;
 		if (!node.children) {
 			const children: FSNode[] = [];
-			for await (const { name } of this.ipfs.files.ls(node.path)) {
+			for await (const { name } of this.ipfs.files.ls(this.rootDir + node.path)) {
 				children.push(await this.stat(`${node.path}/${name}`, name));
 			}
 			node.children = children;
 			console.log('loaded dir:', node.path);
 		}
-		node.expand = !node.expand;
+		node.expand = expand == null ? !node.expand : expand;
+		console.log('toggle:', node, node.expand);
 	}
 }
