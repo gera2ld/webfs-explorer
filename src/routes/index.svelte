@@ -16,7 +16,7 @@
 	$: activeContent = active && getContent(active);
 
 	function getContent(node: FSNode): FileData | undefined {
-		if (node.type === 'directory' && node.children) return { type: 'directory' };
+		if (node.type === 'directory' && node.children) return { type: 'directory', content: null };
 		if (node.content) return detectFile(node.name, node.content);
 	}
 
@@ -61,9 +61,21 @@
 		}
 	}
 
-	function handleOpen(e: SubmitEvent) {
-		e.preventDefault();
+	function handleOpen() {
 		openPath(inputPath);
+	}
+
+	function handleDownload() {
+		if (!(activeContent?.content instanceof Uint8Array)) return;
+		const blob = new Blob([activeContent.content]);
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		if (active?.name) a.download = active.name;
+		a.click();
+		setTimeout(() => {
+			URL.revokeObjectURL(url);
+		}, 2000);
 	}
 
 	onMount(main);
@@ -71,7 +83,7 @@
 
 <div class="w-screen h-screen flex flex-col">
 	<header class="border-b border-gray-400 px-4 py-2">
-		<form on:submit={handleOpen}>
+		<form on:submit|preventDefault={handleOpen}>
 			> <input
 				class="bg-transparent w-[400px] border-b border-gray-300 text-xs"
 				placeholder="IPFS path"
@@ -100,7 +112,14 @@
 			{:else if activeContent.type === 'image'}
 				<ImageViewer name={active?.name} content={activeContent.content} />
 			{:else}
-				Unsupported file: {active?.name}
+				<div class="p-4">
+					<div>{active?.name}</div>
+					<div>
+						Unsupported file, <a href="#" on:click|preventDefault={handleDownload}
+							>click to download</a
+						>
+					</div>
+				</div>
 			{/if}
 		</div>
 	</div>

@@ -21,4 +21,5 @@ export type FileData =
 	  }
 	| {
 			type: 'directory';
+			content: null;
 	  };
