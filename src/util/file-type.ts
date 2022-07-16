@@ -6,13 +6,13 @@ const rules: Array<[lang: string, suffixRule: RegExp, contentRule?: RegExp]> = [
 	['typescript', /^tsx?$/],
 	['css', /^css$/],
 	['html', /^html$/, /^\s*<[!\w]/],
-	['markdown', /^md$/]
+	['markdown', /^md$/],
 ];
 
 function detectTextFile(name: string, content: string) {
 	const result: FileData = {
 		type: 'text',
-		content
+		content,
 	};
 	const suffix = name.match(/.\.(\w+)$/)?.[1]?.toLowerCase();
 	result.language = rules.find(
@@ -25,7 +25,7 @@ function detectTextFile(name: string, content: string) {
 function detectBinaryFile(name: string, content: Uint8Array) {
 	const result: FileData = {
 		type: 'unknown',
-		content
+		content,
 	};
 	const magicNumber = content.slice(0, 4).reduce((prev, c) => prev * 256 + c, 0);
 	switch (magicNumber) {

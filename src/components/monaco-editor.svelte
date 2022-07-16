@@ -24,7 +24,7 @@
 		};
 		editor = monaco.editor.create(el, {
 			value: '',
-			automaticLayout: true
+			automaticLayout: true,
 		});
 	});
 </script>

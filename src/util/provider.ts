@@ -11,7 +11,7 @@ export class IPFSProvider {
 	constructor(private ipfs: IPFS, private rootDir = '/root') {
 		this.state = {
 			path: '',
-			resolvedPath: ''
+			resolvedPath: '',
 		};
 	}
 
@@ -34,7 +34,7 @@ export class IPFSProvider {
 		console.log('resolved:', resolvedPath);
 		this.state = {
 			path: ipfsPath,
-			resolvedPath
+			resolvedPath,
 		};
 		const root = await this.internalStat(resolvedPath);
 		console.log('loaded path:', root);
@@ -73,7 +73,7 @@ export class IPFSProvider {
 		const node = await this.internalStat(this.rootDir + relPath, name);
 		return {
 			...node,
-			path: relPath
+			path: relPath,
 		};
 	}
 
@@ -83,7 +83,7 @@ export class IPFSProvider {
 			name,
 			cid: stat.cid.toString(),
 			type: stat.type,
-			size: stat.size
+			size: stat.size,
 		};
 	}
 

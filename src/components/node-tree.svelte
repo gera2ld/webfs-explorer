@@ -8,7 +8,7 @@
 	function getNodes(node: FSNode, level = 0) {
 		const nodes: Array<{ node: FSNode; level: number }> = [
 			{ node, level },
-			...((node.expand && node.children) || []).flatMap((child) => getNodes(child, level + 1))
+			...((node.expand && node.children) || []).flatMap((child) => getNodes(child, level + 1)),
 		];
 		return nodes;
 	}

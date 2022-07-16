@@ -11,30 +11,17 @@
 			setup({
 				theme: {
 					extend: {
-						colors
-					}
+						colors,
+					},
 				},
 				preflight: (preflight) => ({
 					...preflight,
 					body: apply`bg(white dark:gray-800) text-gray(800 dark:300)`,
-					a: apply`text-blue(400 hover:600)`
-				})
+					a: apply`text-blue(400 hover:600)`,
+				}),
 			});
 		</script>
 		<script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
-		<script>
-			window.ipfsPromise = IpfsCore.create({
-				preload: {
-					// addresses: ['/dns4/ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWGVw5nuix8Hz3cppd6FAtBd4omQxoYH46nW8us527VPTa']
-				}
-			}).then((ipfs) => {
-				window.ipfs = ipfs;
-				ipfs.swarm.connect(
-					'/dns4/ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWGVw5nuix8Hz3cppd6FAtBd4omQxoYH46nW8us527VPTa'
-				);
-				return ipfs;
-			});
-		</script>
 		<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs/loader.js"></script>
 		<script>
 			require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs' } });

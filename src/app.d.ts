@@ -15,6 +15,7 @@ declare namespace App {
 declare global {
 	interface Window {
 		IpfsCore: IPFSCore;
+		ipfs: IPFSCore.IPFS;
 		ipfsPromise: Promise<IPFSCore.IPFS>;
 		monaco: Monaco;
 		monacoPromise: Promise<Monaco>;
