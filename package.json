@@ -6,33 +6,32 @@
 		"build": "vite build",
 		"package": "svelte-kit package",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync",
 		"check": "svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check --plugin-search-dir=. . && eslint .",
 		"format": "prettier --write --plugin-search-dir=. ."
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-static": "1.0.0-next.36",
+		"@sveltejs/adapter-static": "1.0.0-next.42",
 		"@sveltejs/kit": "next",
-		"@typescript-eslint/eslint-plugin": "^5.30.6",
-		"@typescript-eslint/parser": "^5.30.6",
-		"eslint": "^8.19.0",
+		"@typescript-eslint/eslint-plugin": "^5.36.2",
+		"@typescript-eslint/parser": "^5.36.2",
+		"eslint": "^8.23.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-svelte3": "^4.0.0",
 		"prettier": "^2.7.1",
 		"prettier-plugin-svelte": "^2.7.0",
-		"svelte": "^3.49.0",
-		"svelte-check": "^2.8.0",
+		"svelte": "^3.50.0",
+		"svelte-check": "^2.9.0",
 		"svelte-preprocess": "^4.10.7",
 		"tslib": "^2.4.0",
-		"typescript": "^4.7.4",
-		"vite": "^3.0.0"
+		"typescript": "^4.8.2",
+		"vite": "^3.1.0"
 	},
 	"type": "module",
 	"dependencies": {
 		"ipfs-core": "^0.15.4",
 		"isutf8": "^4.0.0",
-		"monaco-editor": "^0.33.0"
+		"monaco-editor": "^0.34.0"
 	}
 }

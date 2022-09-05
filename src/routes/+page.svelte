@@ -48,7 +48,9 @@
 			const rootPath = await provider.openPath(ipfsPath, name);
 			root = provider.root;
 			inputPath = root?.cid?.toString() || '';
-			setActive(await provider.setActivePath(activePath ?? rootPath), true);
+			activePath ??= rootPath;
+			const activeNode = await provider.setActivePath(activePath);
+			if (activeNode) setActive(activeNode, true);
 			console.log('root CID:', inputPath);
 		} catch (err) {
 			console.error(err);
@@ -68,7 +70,7 @@
 			path = 'bafkreialjestm2klnr3hiunodfns2x6lcxxrwrvrwrza5pdgbhqryis454';
 			name ||= 'duck.png';
 		}
-		await openPath(path, name);
+		await openPath(path, name ?? undefined);
 	}
 
 	async function setActive(node: FSNode, toggle?: boolean) {
