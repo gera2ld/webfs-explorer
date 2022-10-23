@@ -1,18 +1,40 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, createEventDispatcher } from 'svelte';
 	import type * as Monaco from 'monaco-editor';
 
+	const dispatch = createEventDispatcher();
+
 	export let language: string = '';
-	export let value: string;
+	export let value: string = '';
+	export let readOnly = false;
+	export let dirty = false;
+
+	let className = '';
+	export { className as class };
+
+	export function getContent() {
+		return model?.getValue();
+	}
+
 	let el: HTMLDivElement;
 	let editor: Monaco.editor.IStandaloneCodeEditor;
+	let model: Monaco.editor.ITextModel;
 	let monaco: typeof Monaco;
 
-	$: editor?.setValue(value || '');
-	$: if (editor && monaco) monaco.editor.setModelLanguage(editor.getModel()!, language || '');
+	$: editor?.updateOptions({ readOnly });
+	$: if (editor && !dirty) initialize(value, language);
 
 	function updateTheme(dark: boolean) {
 		monaco.editor.setTheme(dark ? 'vs-dark' : 'vs');
+	}
+
+	async function initialize(value: string, language: string) {
+		model?.dispose();
+		model = monaco.editor.createModel(value, language);
+		model.onDidChangeContent(() => {
+			dispatch('change');
+		});
+		editor.setModel(model);
 	}
 
 	onMount(async () => {
@@ -29,4 +51,4 @@
 	});
 </script>
 
-<div class="w-full h-full" bind:this={el} />
+<div class={`w-full h-full ${className}`} bind:this={el} />

@@ -1,93 +1,95 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import Icon from '@iconify/svelte';
 	import NodeTree from '../components/node-tree.svelte';
 	import MonacoEditor from '../components/monaco-editor.svelte';
 	import ImageViewer from '../components/image-viewer.svelte';
-	import type { FSNode, FileData } from '../types';
-	import { IPFSProvider } from '../util/provider';
-	import { detectFile } from '../util/file-type';
+	import type { FSNode, FileData, IFileProvider } from '../types';
+	import { MFSProvider, IPFSProvider } from '../providers';
+	import { detectFile } from '../util';
 
-	let provider: IPFSProvider;
-	let root: FSNode | undefined;
-	let active: FSNode | undefined;
-	let inputPath: string = '';
+	let provider: IFileProvider;
+	let root: FSNode;
+	let active: FSNode;
+	let action = '';
+	let inputPath = '';
 	let loading = true;
+	let activeContent: FileData;
+	let message: string;
+	let getContent: () => string;
 
-	$: activeContent = active && getContent(active);
+	$: if (active) updateActiveContent();
 
-	function getContent(node: FSNode): FileData | undefined {
-		if (node.type === 'directory' && node.children) return { type: 'directory', content: null };
-		if (node.content) return detectFile(node.name, node.content);
+	async function loadChildren(node: FSNode, force = false) {
+		if (!node.children || force) {
+			node.children = await provider.readDir(node.path);
+			node.children.forEach((child) => {
+				child.parent = node;
+			});
+			return true;
+		}
 	}
 
-	/**
-	 * Supported paths:
-	 * - CID / /ipfs/CID
-	 * - DOMAIN / /ipns/DOMAIN
-	 * - CID:path/to/file / /ipfs/CID/path/to/file
-	 * - DOMAIN:path/to/file / /ipns/DOMAIN/path/to/file
-	 */
-	async function openPath(path: string, name?: string) {
-		if (loading) return;
-		loading = true;
-		active = undefined;
-		let ipfsPath: string;
-		let activePath: string;
-		if (path.includes(':')) {
-			[ipfsPath, activePath] = path.split(':');
-		} else if (path.startsWith('/')) {
-			const parts = path.split('/');
-			ipfsPath = parts.slice(0, 3).join('/');
-			activePath = parts.slice(3).join('/');
+	async function updateActiveContent() {
+		if (active.type === 'directory') {
+			activeContent = { type: 'directory', content: null };
+			if (await loadChildren(active)) active = active;
 		} else {
-			ipfsPath = path;
+			const content = await provider.readFile(active.path);
+			activeContent = detectFile(active.name, content);
 		}
-		if (/^\w+$/.test(ipfsPath)) ipfsPath = `/ipfs/${ipfsPath}`;
-		else if (ipfsPath.includes('.') && !ipfsPath.includes('/')) ipfsPath = `/ipns/${ipfsPath}`;
+	}
+
+	async function openPath(filePath = '/', activePath = '') {
+		if (/.\/$/.test(filePath)) filePath = filePath.slice(0, -1);
+		provider = new (/^\/ip[fn]s\//.test(filePath) ? IPFSProvider : MFSProvider)();
 		try {
-			const rootPath = await provider.openPath(ipfsPath, name);
-			root = provider.root;
-			inputPath = root?.cid?.toString() || '';
-			activePath ??= rootPath;
-			const activeNode = await provider.setActivePath(activePath);
-			if (activeNode) setActive(activeNode, true);
-			console.log('root CID:', inputPath);
-		} catch (err) {
-			console.error(err);
+			root = await provider.stat(filePath);
+			await setActive(activePath);
+		} catch (error) {
+			showMessage(`${error}`);
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function main() {
-		const ipfs = await window.ipfsPromise;
-		provider = new IPFSProvider(ipfs);
-		loading = false;
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		let path = params.get('p');
-		let name = params.get('n');
-		if (!path) {
-			path = 'bafkreialjestm2klnr3hiunodfns2x6lcxxrwrvrwrza5pdgbhqryis454';
-			name ||= 'duck.png';
-		}
-		await openPath(path, name ?? undefined);
+		let cwd = params.get('c') ?? '/';
+		let active = params.get('a') ?? '';
+		inputPath = cwd;
+		await openPath(cwd, active);
 	}
 
-	async function setActive(node: FSNode, toggle?: boolean) {
-		console.log('setActive:', node.path);
-		active = node;
-		if (node.type === 'file') {
-			await provider.loadNode(node);
-		} else {
-			await provider.toggleNode(node, toggle);
-			root = root;
+	function relpath(filePath: string, basePath: string) {
+		if (filePath === basePath || filePath.startsWith(`${basePath}/`))
+			return filePath.slice(basePath.length + 1);
+		return filePath;
+	}
+
+	async function updateNode(node: FSNode) {
+		if (!provider.readOnly) Object.assign(node, await provider.stat(node.path));
+		return node;
+	}
+
+	async function setActive(filePath = '') {
+		if (active?.dirty) return;
+		let node = root;
+		const parts = relpath(filePath, root.path).split('/').filter(Boolean);
+		for (const part of parts) {
+			if (node.type === 'directory') await loadChildren(node);
+			node.expand = true;
+			const child = node.children?.find((child) => child.name === part);
+			if (!child) throw new Error(`Could not find path: ${filePath}`);
+			node = child;
 		}
-		active = active;
-		if (root) {
-			const params = new URLSearchParams(window.location.hash.slice(1));
-			params.set('p', [root.cid.toString(), node.path].filter(Boolean).join(':'));
-			window.location.hash = params.toString();
-		}
+		if (node.type === 'directory') node.expand = !node.expand;
+		active = await updateNode(node);
+		root = root;
+		const params = new URLSearchParams(window.location.hash.slice(1));
+		params.set('c', root.path);
+		params.set('a', relpath(active.path, root.path));
+		window.location.hash = params.toString();
 	}
 
 	function handleOpen() {
@@ -107,29 +109,149 @@
 		}, 2000);
 	}
 
+	function truncateText(text: string, maxPrefix = 30, maxSuffix = 0) {
+		if (text.length <= maxPrefix + maxSuffix + 3) return text;
+		return text.slice(0, maxPrefix) + '...' + text.slice(-maxSuffix);
+	}
+
+	function handleCopy(e: MouseEvent) {
+		const el = (e.target as HTMLElement).closest('[data-text]') as HTMLElement;
+		const text = el?.dataset.text;
+		if (text) {
+			navigator.clipboard.writeText(text);
+			showMessage(`Copied ${truncateText(text, 30, 4)}`);
+		}
+	}
+
+	let timer: NodeJS.Timeout;
+	function showMessage(text: string) {
+		message = text;
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			message = '';
+		}, 2000);
+	}
+
+	async function handleDelete() {
+		if (!active || active === root) return;
+		if (!confirm(`Confirm to delete ${active.path}?`)) return;
+		await provider.delete(active.path);
+		if (active.parent) {
+			await loadChildren(active.parent, true);
+			active = active.parent;
+		}
+	}
+
+	async function handleRevert() {
+		if (activeContent?.type !== 'text') return;
+		active.dirty = false;
+	}
+
+	async function handleSave() {
+		if (activeContent?.type !== 'text') return;
+		await provider.writeFile(active.path, getContent());
+		active = await updateNode(active);
+		active.dirty = false;
+	}
+
+	function createAction(name: string, expand = false) {
+		return () => {
+			action = name;
+			if (expand) active.expand = true;
+		};
+	}
+
+	function handleSetActive(e: CustomEvent<FSNode>) {
+		setActive(e.detail.path);
+	}
+
+	async function handleRename(e: CustomEvent<string>) {
+		action = '';
+		const newName = e.detail;
+		const newPath = active.path.replace(/\/[^/]+$/, `/${newName}`);
+		await provider.rename(active.path, newPath);
+		if (active.parent) {
+			await loadChildren(active.parent, true);
+			await setActive(newPath);
+		}
+	}
+
+	async function handleNewDir(e: CustomEvent<string>) {
+		action = '';
+		let newPath = active.path;
+		if (!newPath.endsWith('/')) newPath += '/';
+		newPath += e.detail;
+		await provider.mkdir(newPath);
+		await loadChildren(active, true);
+		await setActive(newPath);
+	}
+
+	async function handleNewFile(e: CustomEvent<string>) {
+		action = '';
+		let newPath = active.path;
+		if (!newPath.endsWith('/')) newPath += '/';
+		newPath += e.detail;
+		if (await provider.exists(newPath)) throw new Error(`File exists: ${newPath}`);
+		try {
+			await provider.writeFile(newPath, '');
+		} catch {
+			// the file is created even an error is returned
+		}
+		await loadChildren(active, true);
+		await setActive(newPath);
+	}
+
 	onMount(main);
 </script>
 
 <div class="w-screen h-screen flex flex-col">
-	<header class="border-b border-gray-400 px-4 py-2">
-		<form on:submit|preventDefault={handleOpen}>
-			> <input
+	<header class="flex border-b border-gray-400 px-4 py-2">
+		<form class="flex-1" on:submit|preventDefault={handleOpen}>
+			<Icon icon="tabler:prompt" />
+			<input
 				class="bg-transparent w-[400px] border-b border-gray-300 text-xs"
 				placeholder="IPFS path"
 				bind:value={inputPath}
 			/>
-			<button type="submit">👉🏻 Go</button>
+			<button type="submit">Go <Icon icon="bx:rocket" /></button>
 		</form>
+		{#if activeContent}
+			<button class="ml-2" data-text={active.cid} on:click|preventDefault={handleCopy}>CID</button>
+			<button
+				class="ml-2"
+				data-text={`https://dweb.link/ipfs/${active.cid}`}
+				on:click|preventDefault={handleCopy}>URL</button
+			>
+		{/if}
 	</header>
 	<div class="flex flex-1 min-h-0">
-		<div class="w-[320px] border-r border-gray-400 p-4 overflow-auto">
-			{#if loading}
-				<div class="text-gray-400">Loading...</div>
-			{:else}
-				<NodeTree {root} bind:active {setActive} />
+		<div class="flex flex-col w-[320px] border-r border-gray-400 px-4 overflow-auto">
+			{#if provider && !provider.readOnly}
+			<div class="text-right">
+				<button class="ml-2" on:click={createAction('newDir', true)}><Icon icon="ant-design:folder-add-outlined" /></button>
+				<button class="ml-2" on:click={createAction('newFile', true)}><Icon icon="ant-design:file-add-outlined" /></button>
+				<button class="ml-2" on:click={createAction('rename')}><Icon icon="fluent-mdl2:rename" /></button>
+				<button class="ml-2" on:click={handleDelete}><Icon icon="bx:trash" /></button>
+			</div>
 			{/if}
+			<div class="flex-1 pb-4">
+				{#if loading}
+					<div class="text-gray-400">Loading...</div>
+				{:else}
+					<NodeTree
+						{root}
+						bind:active
+						bind:action
+						on:setActive={handleSetActive}
+						on:cancel={createAction('')}
+						on:rename={handleRename}
+						on:newDir={handleNewDir}
+						on:newFile={handleNewFile}
+					/>
+				{/if}
+			</div>
 		</div>
-		<div class="flex-1">
+		<div class="flex-1 min-w-0 flex flex-col">
 			{#if loading || (active && !activeContent)}
 				<div class="h-full flex items-center justify-center text-gray-400">Loading...</div>
 			{:else if !activeContent || activeContent.type === 'directory'}
@@ -137,15 +259,29 @@
 					Pick a file to view / edit its content
 				</div>
 			{:else if activeContent.type === 'text'}
-				<MonacoEditor language={activeContent.language} value={activeContent.content} />
+				{#if !provider.readOnly}
+					<div class="px-4">
+						<button class="mr-2" on:click={handleRevert}><Icon icon="ci:undo" /></button>
+						<button class="mr-2" on:click={handleSave}><Icon icon="ic:sharp-save-alt" /></button>
+					</div>
+				{/if}
+				<MonacoEditor
+					class="flex-1"
+					language={activeContent.language}
+					value={activeContent.content}
+					dirty={active.dirty}
+					readOnly={provider.readOnly}
+					bind:getContent
+					on:change={() => { active.dirty = true; }}
+				/>
 			{:else if activeContent.type === 'image'}
-				<ImageViewer name={active?.name} content={activeContent.content} />
+				<ImageViewer class="flex-1" name={active?.name} content={activeContent.content} />
 			{:else}
 				<div class="p-4">
 					<div>{active?.name}</div>
 					<div>
-						Unsupported file, <a href="#" on:click|preventDefault={handleDownload}
-							>click to download</a
+						Unsupported file, <button on:click|preventDefault={handleDownload}
+							>click to download</button
 						>
 					</div>
 				</div>
@@ -153,3 +289,6 @@
 		</div>
 	</div>
 </div>
+{#if message}
+	<div class="absolute top-0 right-0 px-2 py-1 bg-gray-500 text-orange-400">{message}</div>
+{/if}

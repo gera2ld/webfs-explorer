@@ -30,8 +30,11 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@iconify/svelte": "^3.0.0",
 		"ipfs-core": "^0.15.4",
+		"ipfs-http-client": "^58.0.1",
 		"isutf8": "^4.0.0",
-		"monaco-editor": "^0.34.0"
+		"monaco-editor": "^0.34.0",
+		"twind": "^0.16.17"
 	}
 }

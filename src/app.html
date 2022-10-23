@@ -4,24 +4,6 @@
 		<meta charset="utf-8" />
 		<title>IPFS Editor</title>
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<script type="module">
-			import { setup, apply } from 'https://cdn.skypack.dev/twind/shim';
-			import * as colors from 'https://cdn.skypack.dev/twind/colors';
-
-			setup({
-				theme: {
-					extend: {
-						colors,
-					},
-				},
-				preflight: (preflight) => ({
-					...preflight,
-					body: apply`bg(white dark:gray-800) text-gray(800 dark:300)`,
-					a: apply`text-blue(400 hover:600)`,
-				}),
-			});
-		</script>
-		<script src="https://cdn.jsdelivr.net/npm/ipfs-core/dist/index.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs/loader.js"></script>
 		<script>
 			require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/min/vs' } });

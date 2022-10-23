@@ -4,9 +4,10 @@ export interface FSNode {
 	cid: string;
 	name: string;
 	size: number;
-	children?: FSNode[];
-	content?: Uint8Array;
 	expand?: boolean;
+	children?: FSNode[];
+	parent?: FSNode;
+	dirty?: boolean;
 }
 
 export type FileData =
@@ -23,3 +24,15 @@ export type FileData =
 			type: 'directory';
 			content: null;
 	  };
+
+export interface IFileProvider {
+	readOnly: boolean;
+	stat(filePath: string): Promise<FSNode>;
+	exists(filePath: string): Promise<boolean>;
+	readFile(filePath: string): Promise<Uint8Array>;
+	readDir(filePath: string): Promise<FSNode[]>;
+	writeFile(filePath: string, content: string): Promise<void>;
+	rename(sourcePath: string, filePath: string): Promise<void>;
+	delete(filePath: string): Promise<void>;
+	mkdir(filePath: string): Promise<void>;
+}
