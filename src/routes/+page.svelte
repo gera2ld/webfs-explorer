@@ -44,6 +44,7 @@
 	}
 
 	async function openPath(filePath = '/', activePath = '') {
+		loading = true;
 		if (/.\/$/.test(filePath)) filePath = filePath.slice(0, -1);
 		provider = await (/^\/ip[fn]s\//.test(filePath) ? IPFSProvider : MFSProvider).create();
 		try {
