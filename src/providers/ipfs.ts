@@ -1,17 +1,16 @@
-import { create } from 'ipfs-http-client';
-import type { IPFSHTTPClient } from 'ipfs-http-client';
+import type { IPFS } from 'ipfs-core';
 import type { FSNode, IFileProvider } from '../types';
-import { arrayFromAsync, mergeUint8Array } from '../util';
+import { arrayFromAsync, mergeUint8Array, createIpfs } from '../util';
 
 export class IPFSProvider implements IFileProvider {
-	private ipfs: IPFSHTTPClient;
-
 	readOnly = true;
 
-	constructor() {
-		this.ipfs = create({
-			url: 'http://127.0.0.1:5001',
-		});
+	static async create() {
+		const ipfs = await createIpfs();
+		return new IPFSProvider(ipfs);
+	}
+
+	constructor(private ipfs: IPFS) {
 	}
 
 	async stat(ipfsPath: string) {
@@ -27,28 +26,29 @@ export class IPFSProvider implements IFileProvider {
 		}
 	}
 
-	private async internalStat(path: string): Promise<FSNode> {
-		const items = await arrayFromAsync(this.ipfs.ls(path));
-		const type = items[0]?.path === path ? 'file' : 'directory';
-		const ipfsPath = await this.ipfs.resolve(path);
+	private async internalStat(filePath: string): Promise<FSNode> {
+		const ipfsPath = await this.ipfs.resolve(filePath);
+		const stat = await this.ipfs.files.stat(ipfsPath);
 		return {
-			name: path,
-			cid: ipfsPath.split('/').pop() || '',
-			type,
-			size: 0,
-			path: path,
+			name: filePath.split('/').pop() || '',
+			cid: stat.cid.toString(),
+			type: stat.type,
+			size: stat.size,
+			path: filePath,
 		};
 	}
 
-	async readFile(ipfsPath: string) {
+	async readFile(filePath: string) {
+		const ipfsPath = await this.ipfs.resolve(filePath);
 		const buffer = await arrayFromAsync(this.ipfs.cat(ipfsPath));
 		return mergeUint8Array(buffer);
 	}
 
-	async readDir(ipfsPath: string) {
+	async readDir(filePath: string) {
+		const ipfsPath = await this.ipfs.resolve(filePath);
 		const items = await arrayFromAsync(this.ipfs.ls(ipfsPath));
 		const children = await Promise.all(items.map(({ name, cid, type, size }) => {
-			const childPath = [ipfsPath.replace(/\/$/, ''), name].join('/');
+			const childPath = [filePath.replace(/\/$/, ''), name].join('/');
 			return {
 				name,
 				cid: cid.toString(),

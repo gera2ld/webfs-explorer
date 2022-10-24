@@ -25,14 +25,17 @@ export type FileData =
 			content: null;
 	  };
 
-export interface IFileProvider {
-	readOnly: boolean;
-	stat(filePath: string): Promise<FSNode>;
-	exists(filePath: string): Promise<boolean>;
-	readFile(filePath: string): Promise<Uint8Array>;
-	readDir(filePath: string): Promise<FSNode[]>;
-	writeFile(filePath: string, content: string): Promise<void>;
-	rename(sourcePath: string, filePath: string): Promise<void>;
-	delete(filePath: string): Promise<void>;
-	mkdir(filePath: string): Promise<void>;
+export abstract class IFileProvider {
+	static create(): Promise<IFileProvider> {
+		throw new Error('Not implemented');
+	}
+	abstract readOnly: boolean;
+	abstract stat(filePath: string): Promise<FSNode>;
+	abstract exists(filePath: string): Promise<boolean>;
+	abstract readFile(filePath: string): Promise<Uint8Array>;
+	abstract readDir(filePath: string): Promise<FSNode[]>;
+	abstract writeFile(filePath: string, content: string): Promise<void>;
+	abstract rename(sourcePath: string, filePath: string): Promise<void>;
+	abstract delete(filePath: string): Promise<void>;
+	abstract mkdir(filePath: string): Promise<void>;
 }

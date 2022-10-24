@@ -8,6 +8,9 @@
 	import { MFSProvider, IPFSProvider } from '../providers';
 	import { detectFile } from '../util';
 
+	const QS_CWD = 'cwd';
+	const QS_CURRENT = 'cur';
+
 	let provider: IFileProvider;
 	let root: FSNode;
 	let active: FSNode;
@@ -42,12 +45,13 @@
 
 	async function openPath(filePath = '/', activePath = '') {
 		if (/.\/$/.test(filePath)) filePath = filePath.slice(0, -1);
-		provider = new (/^\/ip[fn]s\//.test(filePath) ? IPFSProvider : MFSProvider)();
+		provider = await (/^\/ip[fn]s\//.test(filePath) ? IPFSProvider : MFSProvider).create();
 		try {
 			root = await provider.stat(filePath);
 			await setActive(activePath);
 		} catch (error) {
 			showMessage(`${error}`);
+			console.error(error);
 		} finally {
 			loading = false;
 		}
@@ -55,8 +59,8 @@
 
 	async function main() {
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		let cwd = params.get('c') ?? '/';
-		let active = params.get('a') ?? '';
+		let cwd = params.get(QS_CWD) ?? '/';
+		let active = params.get(QS_CURRENT) ?? '';
 		inputPath = cwd;
 		await openPath(cwd, active);
 	}
@@ -87,8 +91,8 @@
 		active = await updateNode(node);
 		root = root;
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		params.set('c', root.path);
-		params.set('a', relpath(active.path, root.path));
+		params.set(QS_CWD, root.path);
+		params.set(QS_CURRENT, relpath(active.path, root.path));
 		window.location.hash = params.toString();
 	}
 
@@ -125,6 +129,7 @@
 
 	let timer: NodeJS.Timeout;
 	function showMessage(text: string) {
+		console.info(text);
 		message = text;
 		clearTimeout(timer);
 		timer = setTimeout(() => {
