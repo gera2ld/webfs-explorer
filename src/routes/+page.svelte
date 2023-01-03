@@ -4,14 +4,15 @@
 	import NodeTree from '../components/node-tree.svelte';
 	import MonacoEditor from '../components/monaco-editor.svelte';
 	import ImageViewer from '../components/image-viewer.svelte';
-	import type { FSNode, FileData, IFileProvider } from '../types';
-	import { MFSProvider, IPFSProvider } from '../providers';
-	import { detectFile } from '../util';
+	import type { FSNode, FileData, IFileProvider, ISupportedUrl } from '../types';
+	import { createProvider } from '../providers';
+	import { detectFile, parseUrl, reprUrl, relpath } from '../util';
 
 	const QS_CWD = 'cwd';
 	const QS_CURRENT = 'cur';
 
 	let provider: IFileProvider;
+	let rootUrl: ISupportedUrl;
 	let root: FSNode;
 	let active: FSNode;
 	let action = '';
@@ -43,12 +44,13 @@
 		}
 	}
 
-	async function openPath(filePath = '/', activePath = '') {
+	async function openPath(filePath = 'ipfs:/', activePath = '') {
 		loading = true;
-		if (/.\/$/.test(filePath)) filePath = filePath.slice(0, -1);
-		provider = await (/^\/ip[fn]s\//.test(filePath) ? IPFSProvider : MFSProvider).create();
+		const url = parseUrl(filePath);
+		provider = await createProvider(url);
 		try {
-			root = await provider.stat(filePath);
+			root = await provider.stat('');
+			rootUrl = url;
 			await setActive(activePath);
 		} catch (error) {
 			showMessage(`${error}`);
@@ -60,16 +62,10 @@
 
 	async function main() {
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		let cwd = params.get(QS_CWD) ?? '/';
+		let cwd = params.get(QS_CWD) ?? 'ipfs:/';
 		let active = params.get(QS_CURRENT) ?? '';
 		inputPath = cwd;
 		await openPath(cwd, active);
-	}
-
-	function relpath(filePath: string, basePath: string) {
-		if (filePath === basePath || filePath.startsWith(`${basePath}/`))
-			return filePath.slice(basePath.length + 1);
-		return filePath;
 	}
 
 	async function updateNode(node: FSNode) {
@@ -92,7 +88,7 @@
 		active = await updateNode(node);
 		root = root;
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		params.set(QS_CWD, root.path);
+		params.set(QS_CWD, reprUrl(rootUrl));
 		params.set(QS_CURRENT, relpath(active.path, root.path));
 		window.location.hash = params.toString();
 	}
@@ -221,7 +217,7 @@
 			/>
 			<button type="submit">Go <Icon icon="bx:rocket" /></button>
 		</form>
-		{#if activeContent}
+		{#if activeContent && active.cid}
 			<button class="ml-2" data-text={active.cid} on:click|preventDefault={handleCopy}>CID</button>
 			<button
 				class="ml-2"

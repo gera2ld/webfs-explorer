@@ -1,16 +1,11 @@
 import type { IPFS } from 'ipfs-core';
-import type { FSNode, IFileProvider } from '../types';
+import type { IPFSNode, IFileProvider, ISupportedUrl } from '../types';
 import { arrayFromAsync, mergeUint8Array, createIpfs } from '../util';
 
 export class IPFSProvider implements IFileProvider {
 	readOnly = true;
 
-	static async create() {
-		const ipfs = await createIpfs();
-		return new IPFSProvider(ipfs);
-	}
-
-	constructor(private ipfs: IPFS) {
+	constructor(private ipfs: IPFS, private root: string) {
 	}
 
 	async stat(ipfsPath: string) {
@@ -26,8 +21,13 @@ export class IPFSProvider implements IFileProvider {
 		}
 	}
 
-	private async internalStat(filePath: string): Promise<FSNode> {
-		const ipfsPath = await this.ipfs.resolve(filePath);
+	private getFullPath(filePath: string) {
+		const fullPath = [this.root, filePath].filter(Boolean).join('/');
+		return fullPath;
+	}
+
+	private async internalStat(filePath: string): Promise<IPFSNode> {
+		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
 		const stat = await this.ipfs.files.stat(ipfsPath);
 		return {
 			name: filePath.split('/').pop() || '',
@@ -39,13 +39,13 @@ export class IPFSProvider implements IFileProvider {
 	}
 
 	async readFile(filePath: string) {
-		const ipfsPath = await this.ipfs.resolve(filePath);
+		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
 		const buffer = await arrayFromAsync(this.ipfs.cat(ipfsPath));
 		return mergeUint8Array(buffer);
 	}
 
 	async readDir(filePath: string) {
-		const ipfsPath = await this.ipfs.resolve(filePath);
+		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
 		const items = await arrayFromAsync(this.ipfs.ls(ipfsPath));
 		const children = await Promise.all(items.map(({ name, cid, type, size }) => {
 			const childPath = [filePath.replace(/\/$/, ''), name].join('/');
@@ -55,7 +55,7 @@ export class IPFSProvider implements IFileProvider {
 				type: type === 'file' ? 'file' : 'directory',
 				size,
 				path: childPath,
-			} as FSNode;
+			} as IPFSNode;
 		}));
 		return children;
 	}
@@ -75,4 +75,9 @@ export class IPFSProvider implements IFileProvider {
 	async mkdir(ipfsPath: string) {
 		throw new Error('Not allowed');
 	}
+}
+
+export async function create(data: ISupportedUrl) {
+	const ipfs = await createIpfs();
+	return new IPFSProvider(ipfs, data.pathname);
 }

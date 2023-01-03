@@ -21,3 +21,5 @@ declare global {
 		monacoPromise: Promise<Monaco>;
 	}
 }
+
+declare module 'pako';

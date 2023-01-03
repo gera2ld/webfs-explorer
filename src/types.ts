@@ -1,13 +1,22 @@
+export interface ISupportedUrl {
+	provider: 'ipfs' | 'ipfs-mfs' | 'npm';
+	pathname: string;
+	query?: Record<string, string>;
+}
+
 export interface FSNode {
 	type: 'file' | 'directory';
 	path: string;
-	cid: string;
 	name: string;
 	size: number;
 	expand?: boolean;
 	children?: FSNode[];
 	parent?: FSNode;
 	dirty?: boolean;
+}
+
+export interface IPFSNode extends FSNode {
+	cid: string;
 }
 
 export type FileData =
@@ -26,9 +35,6 @@ export type FileData =
 	  };
 
 export abstract class IFileProvider {
-	static create(): Promise<IFileProvider> {
-		throw new Error('Not implemented');
-	}
 	abstract readOnly: boolean;
 	abstract stat(filePath: string): Promise<FSNode>;
 	abstract exists(filePath: string): Promise<boolean>;

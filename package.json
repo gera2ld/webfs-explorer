@@ -12,29 +12,31 @@
 		"format": "prettier --write --plugin-search-dir=. ."
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-static": "1.0.0-next.42",
+		"@sveltejs/adapter-static": "1.0.0",
 		"@sveltejs/kit": "next",
-		"@typescript-eslint/eslint-plugin": "^5.36.2",
-		"@typescript-eslint/parser": "^5.36.2",
-		"eslint": "^8.23.0",
-		"eslint-config-prettier": "^8.5.0",
+		"@typescript-eslint/eslint-plugin": "^5.48.0",
+		"@typescript-eslint/parser": "^5.48.0",
+		"eslint": "^8.31.0",
+		"eslint-config-prettier": "^8.6.0",
 		"eslint-plugin-svelte3": "^4.0.0",
-		"prettier": "^2.7.1",
-		"prettier-plugin-svelte": "^2.7.0",
-		"svelte": "^3.50.0",
-		"svelte-check": "^2.9.0",
-		"svelte-preprocess": "^4.10.7",
-		"tslib": "^2.4.0",
-		"typescript": "^4.8.2",
-		"vite": "^3.1.0"
+		"prettier": "^2.8.1",
+		"prettier-plugin-svelte": "^2.9.0",
+		"svelte": "^3.55.0",
+		"svelte-check": "^3.0.1",
+		"svelte-preprocess": "^5.0.0",
+		"tslib": "^2.4.1",
+		"typescript": "^4.9.4",
+		"vite": "^4.0.4"
 	},
 	"type": "module",
 	"dependencies": {
-		"@iconify/svelte": "^3.0.0",
-		"ipfs-core": "^0.15.4",
-		"ipfs-http-client": "^58.0.1",
+		"@gera2ld/tarjs": "^0.2.0",
+		"@iconify/svelte": "^3.0.1",
+		"ipfs-core": "^0.17.0",
+		"ipfs-http-client": "^59.0.0",
 		"isutf8": "^4.0.0",
-		"monaco-editor": "^0.34.0",
-		"twind": "^0.16.17"
+		"monaco-editor": "^0.34.1",
+		"pako": "^2.1.0",
+		"twind": "^0.16.19"
 	}
 }

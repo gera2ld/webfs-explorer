@@ -88,7 +88,6 @@
 		newNode = {
 			type,
 			path: '!new!',
-			cid: '',
 			name: '',
 			size: 0,
 			parent: active,
