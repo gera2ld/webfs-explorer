@@ -1,3 +1,3 @@
-# IPFS Editor
+# WebFS Explorer
 
-This is a web app to view / edit IPFS files on the fly.
+This is a web app to view / edit files on the Internet, including IPFS, tarballs.
