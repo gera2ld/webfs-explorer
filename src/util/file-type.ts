@@ -2,7 +2,7 @@ import isUtf8 from 'isutf8';
 import type { FileData } from '../types';
 
 const rules: Array<[lang: string, suffixRule: RegExp, contentRule?: RegExp]> = [
-	['javascript', /^jsx?$/],
+	['javascript', /^m?jsx?$/],
 	['typescript', /^tsx?$/],
 	['css', /^css$/],
 	['html', /^html$/, /^\s*<[!\w]/],
