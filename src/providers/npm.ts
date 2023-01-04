@@ -83,7 +83,8 @@ export class NPMProvider implements IFileProvider {
 }
 
 export async function create(data: ISupportedUrl) {
-	const registry = data.query?.registry || 'https://registry.npmjs.org';
+	let registry = data.query?.registry || 'registry.npmjs.org';
+	if (!registry.includes('://')) registry = `https://${registry}`;
 	let pkgName = data.pathname;
 	let versionName = 'latest';
 	const i = pkgName.indexOf('@', 1);
