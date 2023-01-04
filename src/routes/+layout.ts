@@ -1,6 +1,6 @@
 import { setup, apply } from 'twind/shim';
 import * as colors from 'twind/colors';
-import { browser } from "$app/environment";
+import { browser } from '$app/environment';
 
 export const prerender = true;
 

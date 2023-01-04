@@ -73,7 +73,11 @@ export class MFSProvider implements IFileProvider {
 
 	async rename(sourcePath: string, filePath: string) {
 		if (await this.exists(filePath)) throw new Error(`Path already exists: ${filePath}`);
-		await this.ipfs.files.mv(this.getFullPath(sourcePath), this.getFullPath(filePath), this.ipfsOptions);
+		await this.ipfs.files.mv(
+			this.getFullPath(sourcePath),
+			this.getFullPath(filePath),
+			this.ipfsOptions
+		);
 	}
 
 	async delete(filePath: string) {
@@ -88,8 +92,7 @@ export class MFSProvider implements IFileProvider {
 export async function create(data: ISupportedUrl) {
 	const { create } = await import('ipfs-http-client');
 	const ipfs = create({
-		url:
-		new URLSearchParams(window.location.hash.slice(1)).get(QS_API) || 'http://127.0.0.1:5001',
+		url: new URLSearchParams(window.location.hash.slice(1)).get(QS_API) || 'http://127.0.0.1:5001',
 	});
 	return new MFSProvider(ipfs, data.pathname);
 }

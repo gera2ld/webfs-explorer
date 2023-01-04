@@ -5,8 +5,7 @@ import { arrayFromAsync, mergeUint8Array, createIpfs } from '../util';
 export class IPFSProvider implements IFileProvider {
 	readOnly = true;
 
-	constructor(private ipfs: IPFS, private root: string) {
-	}
+	constructor(private ipfs: IPFS, private root: string) {}
 
 	async stat(ipfsPath: string) {
 		return this.internalStat(ipfsPath);
@@ -47,16 +46,18 @@ export class IPFSProvider implements IFileProvider {
 	async readDir(filePath: string) {
 		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
 		const items = await arrayFromAsync(this.ipfs.ls(ipfsPath));
-		const children = await Promise.all(items.map(({ name, cid, type, size }) => {
-			const childPath = [filePath.replace(/\/$/, ''), name].join('/');
-			return {
-				name,
-				cid: cid.toString(),
-				type: type === 'file' ? 'file' : 'directory',
-				size,
-				path: childPath,
-			} as IPFSNode;
-		}));
+		const children = await Promise.all(
+			items.map(({ name, cid, type, size }) => {
+				const childPath = [filePath.replace(/\/$/, ''), name].join('/');
+				return {
+					name,
+					cid: cid.toString(),
+					type: type === 'file' ? 'file' : 'directory',
+					size,
+					path: childPath,
+				} as IPFSNode;
+			})
+		);
 		return children;
 	}
 

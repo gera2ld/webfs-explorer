@@ -229,12 +229,18 @@
 	<div class="flex flex-1 min-h-0">
 		<div class="flex flex-col w-[320px] border-r border-gray-400 px-4 overflow-auto">
 			{#if provider && !provider.readOnly}
-			<div class="text-right">
-				<button class="ml-2" on:click={createAction('newDir', true)}><Icon icon="ant-design:folder-add-outlined" /></button>
-				<button class="ml-2" on:click={createAction('newFile', true)}><Icon icon="ant-design:file-add-outlined" /></button>
-				<button class="ml-2" on:click={createAction('rename')}><Icon icon="fluent-mdl2:rename" /></button>
-				<button class="ml-2" on:click={handleDelete}><Icon icon="bx:trash" /></button>
-			</div>
+				<div class="text-right">
+					<button class="ml-2" on:click={createAction('newDir', true)}
+						><Icon icon="ant-design:folder-add-outlined" /></button
+					>
+					<button class="ml-2" on:click={createAction('newFile', true)}
+						><Icon icon="ant-design:file-add-outlined" /></button
+					>
+					<button class="ml-2" on:click={createAction('rename')}
+						><Icon icon="fluent-mdl2:rename" /></button
+					>
+					<button class="ml-2" on:click={handleDelete}><Icon icon="bx:trash" /></button>
+				</div>
 			{/if}
 			<div class="flex-1 pb-4">
 				{#if loading}
@@ -274,7 +280,9 @@
 					dirty={active.dirty}
 					readOnly={provider.readOnly}
 					bind:getContent
-					on:change={() => { active.dirty = true; }}
+					on:change={() => {
+						active.dirty = true;
+					}}
 				/>
 			{:else if activeContent.type === 'image'}
 				<ImageViewer class="flex-1" name={active?.name} content={activeContent.content} />
