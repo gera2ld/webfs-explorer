@@ -30,7 +30,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@gera2ld/tarjs": "^0.2.0",
+		"@gera2ld/tarjs": "^0.2.1",
 		"@iconify/svelte": "^3.0.1",
 		"ipfs-core": "^0.17.0",
 		"ipfs-http-client": "^59.0.0",

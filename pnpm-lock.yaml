@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@gera2ld/tarjs': ^0.2.0
+  '@gera2ld/tarjs': ^0.2.1
   '@iconify/svelte': ^3.0.1
   '@sveltejs/adapter-static': 1.0.0
   '@sveltejs/kit': next
@@ -26,7 +26,7 @@ specifiers:
   vite: ^4.0.4
 
 dependencies:
-  '@gera2ld/tarjs': 0.2.0
+  '@gera2ld/tarjs': 0.2.1
   '@iconify/svelte': 3.0.1_svelte@3.55.0
   ipfs-core: 0.17.0
   ipfs-http-client: 59.0.0
@@ -384,8 +384,8 @@ packages:
       - supports-color
     dev: true
 
-  /@gera2ld/tarjs/0.2.0:
-    resolution: {integrity: sha512-ovByrEpga0obQGCfGiRvIHIiFST+gGiu4rpmeZwMU+XhOXbvAJlUaVnEDAjijyAE0toYadz+akxMrgjrRYIcpw==}
+  /@gera2ld/tarjs/0.2.1:
+    resolution: {integrity: sha512-5OrdUIO9Ik3Q/gAFkmIduxp6l6GbTN/lx2sEXmt68niF43X9ZC5Y/wZzvFemENDFNDE0YMQtBFwU99p3eAaMVw==}
     dependencies:
       '@babel/runtime': 7.20.7
     dev: false

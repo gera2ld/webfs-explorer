@@ -1,13 +1,11 @@
 import { TarFileType } from '@gera2ld/tarjs';
 import type { FSNode, IFileProvider, ISupportedUrl } from '../types';
 
-const encoder = new TextEncoder();
-
 interface TarFileItem {
 	name: string;
 	type: TarFileType;
 	size: number;
-	content: string;
+	content: Blob;
 }
 
 export class NPMProvider implements IFileProvider {
@@ -53,7 +51,8 @@ export class NPMProvider implements IFileProvider {
 	async readFile(filePath: string) {
 		const file = this.fileMap.get(filePath);
 		if (!file) throw new Error('File not exists');
-		return encoder.encode(file.content);
+		const buffer = await file.content.arrayBuffer();
+		return new Uint8Array(buffer);
 	}
 
 	async readDir(filePath: string) {
@@ -110,7 +109,7 @@ async function loadTarball(buffer: ArrayBuffer) {
 	const files = items.map((item) => ({
 		...item,
 		name: item.name.replace(/^package\//, ''),
-		content: reader.getTextFile(item.name),
+		content: reader.getFileBlob(item.name),
 	}));
 	const fileMap = new Map(files.map((file) => [file.name, file]));
 	const dirMap = new Map<string, Set<string>>();
