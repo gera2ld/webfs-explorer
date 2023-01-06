@@ -1,0 +1,6 @@
+This favicon was generated using the following font:
+
+- Font Title: East Sea Dokdo
+- Font Author: Copyright (c) YoonDesign Inc. All Rights Reserved.
+- Font Source: http://fonts.gstatic.com/s/eastseadokdo/v20/xfuo0Wn2V2_KanASqXSZp22m05_aGavYS18y.ttf
+- Font License: SIL Open Font License, 1.1 (http://scripts.sil.org/OFL))
