@@ -95,10 +95,13 @@
 			if (node.type === 'directory') await loadChildren(node);
 			node.expand = true;
 			const child = node.children?.find((child) => child.name === part);
-			if (!child) throw new Error(`Could not find path: ${pathFromRoot}`);
+			if (!child) {
+				console.error(`Could not find path: ${pathFromRoot}`);
+				break;
+			}
 			node = child;
 		}
-		if (node.type === 'directory') node.expand = !node.expand;
+		if (node.type === 'directory') node.expand = active === node ? !node.expand : true;
 		active = await updateNode(node);
 		root = root;
 		const params = new URLSearchParams(window.location.hash.slice(1));
