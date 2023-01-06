@@ -4,7 +4,8 @@
 	import NodeTree from '../components/node-tree.svelte';
 	import MonacoEditor from '../components/monaco-editor.svelte';
 	import ImageViewer from '../components/image-viewer.svelte';
-	import type { FSNode, FileData, IFileProvider, ISupportedUrl } from '../types';
+	import type { FSNode, FileData, ISupportedUrl } from '../types';
+	import type { IFileProvider } from '../providers';
 	import { createProvider } from '../providers';
 	import { detectFile, parseUrl, reprUrl, relpath } from '../util';
 
@@ -44,19 +45,32 @@
 		}
 	}
 
-	async function openPath(filePath = 'ipfs:/', activePath = '') {
+	async function openPath(
+		filePath = 'ipfs:/',
+		activePath = active ? relpath(active.path, root.path) : ''
+	) {
 		loading = true;
-		const url = parseUrl(filePath);
-		provider = await createProvider(url);
 		try {
+			const url = parseUrl(filePath);
+			provider = await createProvider(url);
 			root = await provider.stat('');
-			rootUrl = url;
+			rootUrl = provider.data;
 			await setActive(activePath);
 		} catch (error) {
 			showMessage(`${error}`);
 			console.error(error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function handleSwitchVersion(e: Event) {
+		const version = (e.target as HTMLSelectElement).value;
+		const data = provider.switchVersion(version);
+		if (data) {
+			const url = reprUrl(data);
+			inputPath = url;
+			await openPath(url);
 		}
 	}
 
@@ -73,15 +87,15 @@
 		return node;
 	}
 
-	async function setActive(filePath = '') {
+	async function setActive(pathFromRoot = '') {
 		if (active?.dirty) return;
 		let node = root;
-		const parts = relpath(filePath, root.path).split('/').filter(Boolean);
+		const parts = pathFromRoot.split('/').filter(Boolean);
 		for (const part of parts) {
 			if (node.type === 'directory') await loadChildren(node);
 			node.expand = true;
 			const child = node.children?.find((child) => child.name === part);
-			if (!child) throw new Error(`Could not find path: ${filePath}`);
+			if (!child) throw new Error(`Could not find path: ${pathFromRoot}`);
 			node = child;
 		}
 		if (node.type === 'directory') node.expand = !node.expand;
@@ -89,12 +103,12 @@
 		root = root;
 		const params = new URLSearchParams(window.location.hash.slice(1));
 		params.set(QS_CWD, reprUrl(rootUrl));
-		params.set(QS_CURRENT, relpath(active.path, root.path));
+		params.set(QS_CURRENT, pathFromRoot);
 		window.location.hash = params.toString();
 	}
 
 	function handleOpen() {
-		openPath(inputPath);
+		openPath(inputPath, '');
 	}
 
 	function handleDownload() {
@@ -164,7 +178,7 @@
 	}
 
 	function handleSetActive(e: CustomEvent<FSNode>) {
-		setActive(e.detail.path);
+		setActive(relpath(e.detail.path, root.path));
 	}
 
 	async function handleRename(e: CustomEvent<string>) {
@@ -174,7 +188,7 @@
 		await provider.rename(active.path, newPath);
 		if (active.parent) {
 			await loadChildren(active.parent, true);
-			await setActive(newPath);
+			await setActive(relpath(newPath, root.path));
 		}
 	}
 
@@ -185,7 +199,7 @@
 		newPath += e.detail;
 		await provider.mkdir(newPath);
 		await loadChildren(active, true);
-		await setActive(newPath);
+		await setActive(relpath(newPath, root.path));
 	}
 
 	async function handleNewFile(e: CustomEvent<string>) {
@@ -200,7 +214,7 @@
 			// the file is created even an error is returned
 		}
 		await loadChildren(active, true);
-		await setActive(newPath);
+		await setActive(relpath(newPath, root.path));
 	}
 
 	onMount(main);
@@ -208,7 +222,7 @@
 
 <div class="w-screen h-screen flex flex-col">
 	<header class="flex border-b border-gray-400 px-4 py-2">
-		<form class="flex-1" on:submit|preventDefault={handleOpen}>
+		<form on:submit|preventDefault={handleOpen}>
 			<Icon icon="tabler:prompt" />
 			<input
 				class="bg-transparent w-[400px] border-b border-gray-300 text-xs"
@@ -217,6 +231,20 @@
 			/>
 			<button type="submit">Go <Icon icon="bx:rocket" /></button>
 		</form>
+		{#if provider?.versionInfo}
+			<div class="ml-2">
+				Versions: <select
+					class="bg-transparent border-b border-gray-300"
+					value={provider.versionInfo.value}
+					on:change={handleSwitchVersion}
+				>
+					{#each provider.versionInfo.options as option}
+						<option value={option.value}>{option.label}</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
+		<div class="flex-1" />
 		{#if activeContent && active.cid}
 			<button class="ml-2" data-text={active.cid} on:click|preventDefault={handleCopy}>CID</button>
 			<button

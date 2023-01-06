@@ -1,22 +1,61 @@
 import { TarFileType } from '@gera2ld/tarjs';
+import type { ITarFileInfo } from '@gera2ld/tarjs';
 import type { FSNode, ISupportedUrl } from '../types';
 import { IFileProvider } from './base';
 
-interface TarFileItem {
-	name: string;
-	type: TarFileType;
-	size: number;
+interface TarFileItem extends ITarFileInfo {
 	content: Blob;
+}
+
+interface IRegistryMeta {
+	name: string;
+	'dist-tags': Record<string, string>;
+	versions: Record<
+		string,
+		{
+			dist: {
+				tarball: string;
+			};
+		}
+	>;
 }
 
 export class NPMProvider extends IFileProvider {
 	readOnly = true;
 
 	constructor(
+		data: ISupportedUrl,
 		private fileMap: Map<string, TarFileItem>,
-		private dirMap: Map<string, Set<string>>
+		private dirMap: Map<string, Set<string>>,
+		private versionName: string,
+		private meta: IRegistryMeta
 	) {
-		super();
+		super(data);
+		this.versionInfo = this.getVersionInfo();
+	}
+
+	private getVersionInfo() {
+		const distTags = Object.entries(this.meta['dist-tags']).map(([tag, version]) => ({
+			label: `${tag} (${version})`,
+			value: tag,
+		}));
+		const versions = Object.keys(this.meta.versions)
+			.map((version) => ({ label: version, value: version }))
+			.reverse();
+		return {
+			value: this.versionName,
+			options: [...distTags, ...versions],
+		};
+	}
+
+	switchVersion(versionName: string) {
+		const data = {
+			...this.data,
+			pathname: [this.meta.name, versionName === 'latest' ? '' : versionName]
+				.filter(Boolean)
+				.join('@'),
+		};
+		return data;
 	}
 
 	async stat(filePath: string) {
@@ -80,12 +119,16 @@ export async function create(data: ISupportedUrl) {
 		pkgName = pkgName.slice(0, i);
 	}
 	const metaUrl = `${registry}/${pkgName}`;
-	const meta = await loadJson(metaUrl);
+	const meta = await loadJson<IRegistryMeta>(metaUrl);
+	return createWithVersion(data, meta, versionName);
+}
+
+async function createWithVersion(data: ISupportedUrl, meta: IRegistryMeta, versionName: string) {
 	const distTags = meta['dist-tags'];
 	const versionInfo = meta.versions[distTags[versionName] || versionName];
 	const tarUrl = versionInfo.dist.tarball;
 	const { fileMap, dirMap } = await loadTarballByUrl(tarUrl);
-	return new NPMProvider(fileMap, dirMap);
+	return new NPMProvider(data, fileMap, dirMap, versionName, meta);
 }
 
 async function loadTarball(buffer: ArrayBuffer) {
@@ -125,9 +168,9 @@ async function loadTarballByUrl(url: string) {
 	return await loadTarball(buffer);
 }
 
-async function loadJson(url: string) {
+async function loadJson<T = unknown>(url: string) {
 	const resp = await fetch(url);
-	const data = await resp.json();
+	const data = (await resp.json()) as T;
 	if (!resp.ok) throw { resp, data };
 	return data;
 }

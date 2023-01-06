@@ -6,8 +6,11 @@ import { IFileProvider } from './base';
 export class IPFSProvider extends IFileProvider {
 	readOnly = true;
 
-	constructor(private ipfs: IPFS, private root: string) {
-		super();
+	private root: string;
+
+	constructor(data: ISupportedUrl, private ipfs: IPFS) {
+		super(data);
+		this.root = data.pathname;
 	}
 
 	async stat(ipfsPath: string) {
@@ -67,5 +70,5 @@ export class IPFSProvider extends IFileProvider {
 
 export async function create(data: ISupportedUrl) {
 	const ipfs = await createIpfs();
-	return new IPFSProvider(ipfs, data.pathname);
+	return new IPFSProvider(data, ipfs);
 }

@@ -4,6 +4,8 @@ import { create as createIpfsProvider } from './ipfs';
 import { create as createMfsProvider } from './mfs';
 import { create as createNpmProvider } from './npm';
 
+export { IFileProvider };
+
 const providerFactories: Record<string, (url: ISupportedUrl) => Promise<IFileProvider>> = {
 	ipfs: createIpfsProvider,
 	'ipfs-mfs': createMfsProvider,

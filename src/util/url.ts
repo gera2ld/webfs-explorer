@@ -20,7 +20,8 @@ export function parseUrl(url: string): ISupportedUrl {
 		};
 	}
 	if (data.protocol === 'npm:') {
-		// npm:qrcanvas?registry=registry.npmmirror.com
+		// npm:@gera2ld/tarjs
+		// npm:@gera2ld/tarjs@latest?registry=registry.npmmirror.com
 		const query = [...data.searchParams.entries()].reduce((prev, [key, value]) => {
 			prev[key] = value;
 			return prev;

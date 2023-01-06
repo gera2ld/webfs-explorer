@@ -7,12 +7,14 @@ import { IFileProvider } from './base';
 const QS_API = 'api';
 
 export class MFSProvider extends IFileProvider {
-	private ipfsOptions: { cidVersion: CIDVersion } = { cidVersion: 1 };
-
 	readOnly = false;
 
-	constructor(private ipfs: IPFSHTTPClient, private root: string) {
-		super();
+	private ipfsOptions: { cidVersion: CIDVersion } = { cidVersion: 1 };
+	private root: string;
+
+	constructor(data: ISupportedUrl, private ipfs: IPFSHTTPClient) {
+		super(data);
+		this.root = data.pathname;
 	}
 
 	async stat(filePath: string) {
@@ -97,5 +99,5 @@ export async function create(data: ISupportedUrl) {
 	const ipfs = create({
 		url: new URLSearchParams(window.location.hash.slice(1)).get(QS_API) || 'http://127.0.0.1:5001',
 	});
-	return new MFSProvider(ipfs, data.pathname);
+	return new MFSProvider(data, ipfs);
 }
