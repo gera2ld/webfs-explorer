@@ -1,4 +1,5 @@
-import type { IFileProvider, ISupportedUrl } from '../types';
+import type { ISupportedUrl } from '../types';
+import type { IFileProvider } from './base';
 import { create as createIpfsProvider } from './ipfs';
 import { create as createMfsProvider } from './mfs';
 import { create as createNpmProvider } from './npm';

@@ -1,38 +1,4 @@
-export interface ISupportedUrl {
-	provider: 'ipfs' | 'ipfs-mfs' | 'npm';
-	pathname: string;
-	query?: Record<string, string>;
-}
-
-export interface FSNode {
-	type: 'file' | 'directory';
-	path: string;
-	name: string;
-	size: number;
-	expand?: boolean;
-	children?: FSNode[];
-	parent?: FSNode;
-	dirty?: boolean;
-}
-
-export interface IPFSNode extends FSNode {
-	cid: string;
-}
-
-export type FileData =
-	| {
-			type: 'unknown' | 'image';
-			content: Uint8Array;
-	  }
-	| {
-			type: 'text';
-			language?: string;
-			content: string;
-	  }
-	| {
-			type: 'directory';
-			content: null;
-	  };
+import type { FSNode } from '../types';
 
 export abstract class IFileProvider {
 	abstract readOnly: boolean;

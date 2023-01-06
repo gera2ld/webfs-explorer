@@ -1,11 +1,14 @@
 import type { IPFS } from 'ipfs-core';
-import type { IPFSNode, IFileProvider, ISupportedUrl } from '../types';
+import type { IPFSNode, ISupportedUrl } from '../types';
 import { arrayFromAsync, mergeUint8Array, createIpfs } from '../util';
+import { IFileProvider } from './base';
 
-export class IPFSProvider implements IFileProvider {
+export class IPFSProvider extends IFileProvider {
 	readOnly = true;
 
-	constructor(private ipfs: IPFS, private root: string) {}
+	constructor(private ipfs: IPFS, private root: string) {
+		super();
+	}
 
 	async stat(ipfsPath: string) {
 		return this.internalStat(ipfsPath);
@@ -59,22 +62,6 @@ export class IPFSProvider implements IFileProvider {
 			})
 		);
 		return children;
-	}
-
-	async writeFile(ipfsPath: string, content: string) {
-		throw new Error('Not allowed');
-	}
-
-	async rename(sourcePath: string, filePath: string) {
-		throw new Error('Not allowed');
-	}
-
-	async delete(ipfsPath: string) {
-		throw new Error('Not allowed');
-	}
-
-	async mkdir(ipfsPath: string) {
-		throw new Error('Not allowed');
 	}
 }
 

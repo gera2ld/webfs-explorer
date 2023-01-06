@@ -1,16 +1,19 @@
 import type { IPFSHTTPClient } from 'ipfs-http-client';
 import type { CIDVersion } from 'multiformats/cid';
-import type { IPFSNode, IFileProvider, ISupportedUrl } from '../types';
+import type { IPFSNode, ISupportedUrl } from '../types';
 import { arrayFromAsync, mergeUint8Array } from '../util';
+import { IFileProvider } from './base';
 
 const QS_API = 'api';
 
-export class MFSProvider implements IFileProvider {
+export class MFSProvider extends IFileProvider {
 	private ipfsOptions: { cidVersion: CIDVersion } = { cidVersion: 1 };
 
 	readOnly = false;
 
-	constructor(private ipfs: IPFSHTTPClient, private root: string) {}
+	constructor(private ipfs: IPFSHTTPClient, private root: string) {
+		super();
+	}
 
 	async stat(filePath: string) {
 		return this.internalStat(filePath);

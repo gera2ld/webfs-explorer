@@ -1,5 +1,6 @@
 import { TarFileType } from '@gera2ld/tarjs';
-import type { FSNode, IFileProvider, ISupportedUrl } from '../types';
+import type { FSNode, ISupportedUrl } from '../types';
+import { IFileProvider } from './base';
 
 interface TarFileItem {
 	name: string;
@@ -8,13 +9,15 @@ interface TarFileItem {
 	content: Blob;
 }
 
-export class NPMProvider implements IFileProvider {
+export class NPMProvider extends IFileProvider {
 	readOnly = true;
 
 	constructor(
 		private fileMap: Map<string, TarFileItem>,
 		private dirMap: Map<string, Set<string>>
-	) {}
+	) {
+		super();
+	}
 
 	async stat(filePath: string) {
 		return this.internalStat(filePath);
@@ -63,22 +66,6 @@ export class NPMProvider implements IFileProvider {
 				return keyA < keyB ? -1 : 1;
 			}
 		);
-	}
-
-	async writeFile(ipfsPath: string, content: string) {
-		throw new Error('Not allowed');
-	}
-
-	async rename(sourcePath: string, filePath: string) {
-		throw new Error('Not allowed');
-	}
-
-	async delete(ipfsPath: string) {
-		throw new Error('Not allowed');
-	}
-
-	async mkdir(ipfsPath: string) {
-		throw new Error('Not allowed');
 	}
 }
 
