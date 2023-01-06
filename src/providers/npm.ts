@@ -106,7 +106,7 @@ async function loadTarball(buffer: ArrayBuffer) {
 	const arr = new Uint8Array(buffer);
 	const tar = pako.inflate(arr);
 	const reader = new TarReader();
-	const items = await reader.readFile(new Blob([tar]));
+	const items = await reader.readFile(tar);
 	const files = items.map((item) => ({
 		...item,
 		name: item.name.replace(/^package\//, ''),

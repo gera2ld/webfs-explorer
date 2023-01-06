@@ -1,6 +1,4 @@
 /// <reference types="@sveltejs/kit" />
-import * as IPFSCore from 'ipfs-core';
-import * as Monaco from 'monaco-editor';
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
@@ -13,6 +11,9 @@ declare namespace App {
 }
 
 declare global {
+	import * as IPFSCore from 'ipfs-core';
+	import * as Monaco from 'monaco-editor';
+
 	interface Window {
 		IpfsCore: IPFSCore;
 		ipfs: IPFSCore.IPFS;
@@ -22,4 +23,6 @@ declare global {
 	}
 }
 
-declare module 'pako';
+declare module 'pako' {
+	declare function inflate(input: Uint8Array): Uint8Array;
+}
