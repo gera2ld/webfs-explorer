@@ -9,8 +9,8 @@
 	import { createProvider } from '../providers';
 	import { detectFile, parseUrl, reprUrl, relpath } from '../util';
 
-	const QS_CWD = 'cwd';
-	const QS_CURRENT = 'cur';
+	const QS_ROOT = 'r';
+	const QS_PATH = 'p';
 
 	let provider: IFileProvider;
 	let rootUrl: ISupportedUrl;
@@ -76,8 +76,8 @@
 
 	async function main() {
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		let cwd = params.get(QS_CWD) ?? 'ipfs:/';
-		let active = params.get(QS_CURRENT) ?? '';
+		let cwd = params.get(QS_ROOT) ?? 'npm:@gera2ld/tarjs';
+		let active = params.get(QS_PATH) ?? '';
 		inputPath = cwd;
 		await openPath(cwd, active);
 	}
@@ -105,8 +105,8 @@
 		active = await updateNode(node);
 		root = root;
 		const params = new URLSearchParams(window.location.hash.slice(1));
-		params.set(QS_CWD, reprUrl(rootUrl));
-		params.set(QS_CURRENT, pathFromRoot);
+		params.set(QS_ROOT, reprUrl(rootUrl));
+		params.set(QS_PATH, pathFromRoot);
 		window.location.hash = params.toString();
 	}
 
