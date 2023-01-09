@@ -1,6 +1,6 @@
 import { TarFileType } from '@gera2ld/tarjs';
 import type { ITarFileInfo } from '@gera2ld/tarjs';
-import type { FSNode, ISupportedUrl } from '../types';
+import type { FSNode, IProviderInputOption, IProviderSelectOption, ISupportedUrl } from '../types';
 import { IFileProvider } from './base';
 
 interface TarFileItem extends ITarFileInfo {
@@ -20,6 +20,13 @@ interface IRegistryMeta {
 	>;
 }
 
+const DEFAULT_REGISTRY = 'registry.npmjs.org';
+const DEFAULT_REGISTRIES = [
+	DEFAULT_REGISTRY,
+	'registry.yarnpkg.com',
+	'npm.pkg.github.com',
+];
+
 export class NPMProvider extends IFileProvider {
 	readOnly = true;
 
@@ -31,27 +38,52 @@ export class NPMProvider extends IFileProvider {
 		private meta: IRegistryMeta
 	) {
 		super(data);
-		this.versionInfo = this.getVersionInfo();
+		this.options = [this.getVersionInfo(), this.getRegistryInfo()];
 	}
 
-	private getVersionInfo() {
+	private getVersionInfo(): IProviderSelectOption {
 		const distTags = Object.entries(this.meta['dist-tags']).map(([tag, version]) => ({
-			label: `${tag} (${version})`,
+			title: `${tag} (${version})`,
 			value: tag,
 		}));
 		const versions = Object.keys(this.meta.versions)
-			.map((version) => ({ label: version, value: version }))
+			.map((version) => ({ title: version, value: version }))
 			.reverse();
 		return {
+			type: 'select',
+			name: 'version',
+			label: 'Versions:',
 			value: this.versionName,
-			options: [...distTags, ...versions],
+			data: [...distTags, ...versions],
 		};
 	}
 
-	switchVersion(versionName: string) {
-		const data = {
+	private getRegistryInfo(): IProviderInputOption {
+		return {
+			type: 'input',
+			name: 'registry',
+			label: 'Registry:',
+			value: this.data.query?.registry || DEFAULT_REGISTRY,
+			data: DEFAULT_REGISTRIES,
+		};
+	}
+
+	setOptions(options: Record<string, string>) {
+		let { version, registry } = options;
+		if (version === 'latest') version = '';
+		if (registry.startsWith('https://')) registry = registry.slice(7);
+		if (registry === DEFAULT_REGISTRY) registry = '';
+		const query: Record<string, string> = {
+			...this.data.query,
+			registry,
+		};
+		Object.entries(query).forEach(([key, value]) => {
+			if (value == null) delete query[key];
+		});
+		const data: ISupportedUrl = {
 			...this.data,
-			pathname: [this.meta.name, versionName === 'latest' ? '' : versionName]
+			query,
+			pathname: [this.meta.name, version && version !== 'latest' ? version : '']
 				.filter(Boolean)
 				.join('@'),
 		};
@@ -109,7 +141,7 @@ export class NPMProvider extends IFileProvider {
 }
 
 export async function create(data: ISupportedUrl) {
-	let registry = data.query?.registry || 'registry.npmjs.org';
+	let registry = data.query?.registry || DEFAULT_REGISTRY;
 	if (!registry.includes('://')) registry = `https://${registry}`;
 	let pkgName = data.pathname;
 	let versionName = 'latest';

@@ -35,3 +35,21 @@ export type FileData =
 			type: 'directory';
 			content: null;
 	  };
+
+export interface IProviderSelectOption {
+	type: 'select';
+	name: string;
+	label?: string;
+	value: string;
+	data: Array<{ title: string; value: string }>;
+}
+
+export interface IProviderInputOption {
+	type: 'input';
+	name: string;
+	label?: string;
+	value: string;
+	data?: string[];
+}
+
+export type IProviderOption = IProviderSelectOption | IProviderInputOption;

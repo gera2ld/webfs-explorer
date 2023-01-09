@@ -1,4 +1,4 @@
-import type { FSNode, ISupportedUrl } from '../types';
+import type { FSNode, IProviderOption, ISupportedUrl } from '../types';
 
 export abstract class IFileProvider {
 	constructor(public data: ISupportedUrl) {}
@@ -9,9 +9,9 @@ export abstract class IFileProvider {
 	abstract readFile(filePath: string): Promise<Uint8Array>;
 	abstract readDir(filePath: string): Promise<FSNode[]>;
 
-	versionInfo: { value: string; options: { label: string; value: string }[] } | void = undefined;
+	options: IProviderOption[] = [];
 
-	switchVersion(version: string): ISupportedUrl | void {
+	setOptions(options: Record<string, string>): ISupportedUrl | void {
 		// noop
 	}
 

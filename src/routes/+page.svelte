@@ -4,6 +4,7 @@
 	import NodeTree from '../components/node-tree.svelte';
 	import MonacoEditor from '../components/monaco-editor.svelte';
 	import ImageViewer from '../components/image-viewer.svelte';
+	import ProviderOption from '../components/provider-option.svelte';
 	import type { FSNode, FileData, ISupportedUrl } from '../types';
 	import type { IFileProvider } from '../providers';
 	import { createProvider } from '../providers';
@@ -22,6 +23,7 @@
 	let activeContent: FileData;
 	let message: string;
 	let getContent: () => string;
+	let options: Record<string, string> = {};
 
 	$: if (active) updateActiveContent();
 
@@ -55,6 +57,10 @@
 			provider = await createProvider(url);
 			root = await provider.stat('');
 			rootUrl = provider.data;
+			options = provider.options.reduce((prev, item) => {
+				prev[item.name] = item.value;
+				return prev;
+			}, {} as Record<string, string>);
 			await setActive(activePath);
 		} catch (error) {
 			showMessage(`${error}`);
@@ -64,9 +70,8 @@
 		}
 	}
 
-	async function handleSwitchVersion(e: Event) {
-		const version = (e.target as HTMLSelectElement).value;
-		const data = provider.switchVersion(version);
+	async function handleUpdate() {
+		const data = provider.setOptions(options);
 		if (data) {
 			const url = reprUrl(data);
 			inputPath = url;
@@ -232,20 +237,15 @@
 				placeholder="IPFS path"
 				bind:value={inputPath}
 			/>
-			<button type="submit">Go <Icon icon="bx:rocket" /></button>
+			<button type="submit" title="Go"><Icon icon="bx:rocket" /></button>
 		</form>
-		{#if provider?.versionInfo}
-			<div class="ml-2">
-				Versions: <select
-					class="bg-transparent border-b border-gray-300"
-					value={provider.versionInfo.value}
-					on:change={handleSwitchVersion}
-				>
-					{#each provider.versionInfo.options as option}
-						<option value={option.value}>{option.label}</option>
-					{/each}
-				</select>
-			</div>
+		{#if provider?.options.length}
+			<form on:submit|preventDefault={handleUpdate}>
+				{#each provider.options as option}
+					<ProviderOption props={option} bind:value={options[option.name]} />
+				{/each}
+				<button type="submit" title="Update"><Icon icon="mi:enter" /></button>
+			</form>
 		{/if}
 		<div class="flex-1" />
 		{#if activeContent && active.cid}
@@ -253,24 +253,28 @@
 			<button
 				class="ml-2"
 				data-text={`https://dweb.link/ipfs/${active.cid}`}
-				on:click|preventDefault={handleCopy}>URL</button
+				on:click|preventDefault={handleCopy}
 			>
+				URL
+			</button>
 		{/if}
 	</header>
 	<div class="flex flex-1 min-h-0">
 		<div class="flex flex-col w-[320px] border-r border-gray-400 px-4 overflow-auto">
 			{#if provider && !provider.readOnly}
 				<div class="text-right">
-					<button class="ml-2" on:click={createAction('newDir', true)}
-						><Icon icon="ant-design:folder-add-outlined" /></button
-					>
-					<button class="ml-2" on:click={createAction('newFile', true)}
-						><Icon icon="ant-design:file-add-outlined" /></button
-					>
-					<button class="ml-2" on:click={createAction('rename')}
-						><Icon icon="fluent-mdl2:rename" /></button
-					>
-					<button class="ml-2" on:click={handleDelete}><Icon icon="bx:trash" /></button>
+					<button class="ml-2" on:click={createAction('newDir', true)}>
+						<Icon icon="ant-design:folder-add-outlined" />
+					</button>
+					<button class="ml-2" on:click={createAction('newFile', true)}>
+						<Icon icon="ant-design:file-add-outlined" />
+					</button>
+					<button class="ml-2" on:click={createAction('rename')}>
+						<Icon icon="fluent-mdl2:rename" />
+					</button>
+					<button class="ml-2" on:click={handleDelete}>
+						<Icon icon="bx:trash" />
+					</button>
 				</div>
 			{/if}
 			<div class="flex-1 pb-4">
@@ -321,9 +325,8 @@
 				<div class="p-4">
 					<div>{active?.name}</div>
 					<div>
-						Unsupported file, <button on:click|preventDefault={handleDownload}
-							>click to download</button
-						>
+						Unsupported file,
+						<button on:click|preventDefault={handleDownload}>click to download</button>
 					</div>
 				</div>
 			{/if}

@@ -4,8 +4,8 @@
 
 	const dispatch = createEventDispatcher();
 
-	export let language: string = '';
-	export let value: string = '';
+	export let language = '';
+	export let value = '';
 	export let readOnly = false;
 	export let dirty = false;
 
