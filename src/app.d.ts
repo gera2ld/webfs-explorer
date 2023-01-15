@@ -22,7 +22,3 @@ declare global {
 		monacoPromise: Promise<Monaco>;
 	}
 }
-
-declare module 'pako' {
-	declare function inflate(input: Uint8Array): Uint8Array;
-}

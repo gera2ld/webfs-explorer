@@ -21,11 +21,7 @@ interface IRegistryMeta {
 }
 
 const DEFAULT_REGISTRY = 'registry.npmjs.org';
-const DEFAULT_REGISTRIES = [
-	DEFAULT_REGISTRY,
-	'registry.yarnpkg.com',
-	'npm.pkg.github.com',
-];
+const DEFAULT_REGISTRIES = [DEFAULT_REGISTRY, 'registry.yarnpkg.com', 'npm.pkg.github.com'];
 
 export class NPMProvider extends IFileProvider {
 	readOnly = true;
@@ -165,8 +161,7 @@ async function createWithVersion(data: ISupportedUrl, meta: IRegistryMeta, versi
 
 async function loadTarball(buffer: ArrayBuffer) {
 	const [pako, { TarReader }] = await Promise.all([import('pako'), import('@gera2ld/tarjs')]);
-	const arr = new Uint8Array(buffer);
-	const tar = pako.inflate(arr);
+	const tar = pako.inflate(buffer);
 	const reader = new TarReader();
 	const items = await reader.readFile(tar);
 	const files = items.map((item) => ({
