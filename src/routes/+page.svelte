@@ -47,20 +47,25 @@
 		}
 	}
 
+	async function checkProvider(url: string) {
+		if (provider && reprUrl(provider.data) === url) return;
+		const data = parseUrl(url);
+		provider = await createProvider(data);
+		root = await provider.stat('');
+		rootUrl = provider.data;
+		options = provider.options.reduce((prev, item) => {
+			prev[item.name] = item.value;
+			return prev;
+		}, {} as Record<string, string>);
+	}
+
 	async function openPath(
-		filePath = 'ipfs:/',
+		url = 'ipfs:/',
 		activePath = active ? relpath(active.path, root.path) : ''
 	) {
 		loading = true;
 		try {
-			const url = parseUrl(filePath);
-			provider = await createProvider(url);
-			root = await provider.stat('');
-			rootUrl = provider.data;
-			options = provider.options.reduce((prev, item) => {
-				prev[item.name] = item.value;
-				return prev;
-			}, {} as Record<string, string>);
+			await checkProvider(url);
 			await setActive(activePath);
 		} catch (error) {
 			showMessage(`${error}`);
@@ -79,7 +84,7 @@
 		}
 	}
 
-	async function main() {
+	async function onHashChange() {
 		const params = new URLSearchParams(window.location.hash.slice(1));
 		let cwd = params.get(QS_ROOT) ?? 'npm:@gera2ld/tarjs';
 		let active = params.get(QS_PATH) ?? '';
@@ -94,6 +99,15 @@
 
 	async function setActive(pathFromRoot = '') {
 		if (active?.dirty) return;
+
+		// Update hash first to avoid repetitive loading
+		const hash = window.location.hash.slice(1);
+		const params = new URLSearchParams(hash);
+		params.set(QS_ROOT, reprUrl(rootUrl));
+		params.set(QS_PATH, pathFromRoot);
+		const newHash = params.toString();
+		if (hash !== newHash) window.location.hash = newHash;
+
 		let node = root;
 		const parts = pathFromRoot.split('/').filter(Boolean);
 		for (const part of parts) {
@@ -109,10 +123,6 @@
 		if (node.type === 'directory') node.expand = active === node ? !node.expand : true;
 		active = await updateNode(node);
 		root = root;
-		const params = new URLSearchParams(window.location.hash.slice(1));
-		params.set(QS_ROOT, reprUrl(rootUrl));
-		params.set(QS_PATH, pathFromRoot);
-		window.location.hash = params.toString();
 	}
 
 	function handleOpen() {
@@ -225,7 +235,13 @@
 		await setActive(relpath(newPath, root.path));
 	}
 
-	onMount(main);
+	onMount(() => {
+		window.addEventListener('hashchange', onHashChange, false);
+		onHashChange();
+		return () => {
+			window.removeEventListener('hashchange', onHashChange, false);
+		};
+	});
 </script>
 
 <div class="w-screen h-screen flex flex-col">
