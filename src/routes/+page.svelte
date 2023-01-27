@@ -21,7 +21,7 @@
 	let inputPath = '';
 	let loading = true;
 	let activeContent: FileData;
-	let message: string;
+	let message: { type: 'info' | 'error'; content: string } | null;
 	let getContent: () => string;
 	let options: Record<string, string> = {};
 
@@ -68,7 +68,7 @@
 			await checkProvider(url);
 			await setActive(activePath);
 		} catch (error) {
-			showMessage(`${error}`);
+			showMessage(`${error}`, 'error');
 			console.error(error);
 		} finally {
 			loading = false;
@@ -159,12 +159,11 @@
 	}
 
 	let timer: NodeJS.Timeout;
-	function showMessage(text: string) {
-		console.info(text);
-		message = text;
+	function showMessage(content: string, type: 'info' | 'error' = 'info') {
+		message = { type, content };
 		clearTimeout(timer);
 		timer = setTimeout(() => {
-			message = '';
+			message = null;
 		}, 2000);
 	}
 
@@ -359,5 +358,13 @@
 	</div>
 </div>
 {#if message}
-	<div class="absolute top-0 right-0 px-2 py-1 bg-gray-500 text-orange-400">{message}</div>
+	<div
+		class={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-8 bg-gray-100 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 ${
+			message.type === 'error'
+				? 'text-red-500 dark:text-red-600 border-red-500 dark:border-red-600'
+				: 'dark:text-yellow-600'
+		}`}
+	>
+		{message.content}
+	</div>
 {/if}
