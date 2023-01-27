@@ -12,6 +12,7 @@
 
 	export let props: IProviderOption;
 	export let value: string;
+	export let onUpdate: () => void;
 
 	const id = getId();
 </script>
@@ -22,7 +23,7 @@
 	{/if}
 
 	{#if props.type === 'select'}
-		<select bind:value class="bg-transparent border-b border-gray-300">
+		<select bind:value class="bg-transparent border-b border-gray-300" on:change={onUpdate}>
 			{#each props.data as item}
 				<option value={item.value}>{item.title}</option>
 			{/each}
@@ -32,6 +33,7 @@
 			bind:value
 			list={props.data ? id : null}
 			class="bg-transparent border-b border-gray-300 text-inherit"
+			on:change={onUpdate}
 		/>
 		{#if props.data}
 			<datalist {id}>

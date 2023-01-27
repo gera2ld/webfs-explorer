@@ -42,7 +42,8 @@ export function reprUrl(data: ISupportedUrl) {
 		return `${protocol}:${rest.join('/')}`;
 	}
 	if (data.provider === 'npm') {
-		const qs = new URLSearchParams(data.query).toString();
+		const query = Object.entries(data.query || []).filter(([, value]) => value);
+		const qs = new URLSearchParams(query).toString();
 		return `npm:${data.pathname}${qs ? '?' : ''}${qs}`;
 	}
 	throw new Error('Unsupported URL');

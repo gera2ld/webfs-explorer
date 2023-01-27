@@ -75,13 +75,12 @@
 		}
 	}
 
-	async function handleUpdate() {
+	function handleUpdate() {
 		const data = provider.setOptions(options);
-		if (data) {
-			const url = reprUrl(data);
-			inputPath = url;
-			await openPath(url);
-		}
+		if (!data) return;
+		const url = reprUrl(data);
+		if (inputPath === url) return;
+		openPath((inputPath = url));
 	}
 
 	async function onHashChange() {
@@ -263,11 +262,14 @@
 			<button type="submit" title="Go"><Icon icon="bx:rocket" /></button>
 		</form>
 		{#if provider?.options.length}
-			<form on:submit|preventDefault={handleUpdate}>
+			<form>
 				{#each provider.options as option}
-					<ProviderOption props={option} bind:value={options[option.name]} />
+					<ProviderOption
+						props={option}
+						bind:value={options[option.name]}
+						onUpdate={handleUpdate}
+					/>
 				{/each}
-				<button type="submit" title="Update"><Icon icon="mi:enter" /></button>
 			</form>
 		{/if}
 		<div class="flex-1" />
