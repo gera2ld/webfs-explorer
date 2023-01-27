@@ -97,17 +97,20 @@
 		return node;
 	}
 
-	async function setActive(pathFromRoot = '') {
-		if (active?.dirty) return;
-
+	function updatePath(pathFromRoot = '') {
 		// Update hash first to avoid repetitive loading
 		const hash = window.location.hash.slice(1);
 		const params = new URLSearchParams(hash);
 		params.set(QS_ROOT, reprUrl(rootUrl));
 		params.set(QS_PATH, pathFromRoot);
 		const newHash = params.toString();
-		if (hash !== newHash) window.location.hash = newHash;
+		const canUpdate = hash !== newHash;
+		if (canUpdate) window.location.hash = newHash;
+		return canUpdate;
+	}
 
+	async function setActive(pathFromRoot = '') {
+		if (active?.dirty) return;
 		let node = root;
 		const parts = pathFromRoot.split('/').filter(Boolean);
 		for (const part of parts) {
@@ -196,7 +199,11 @@
 	}
 
 	function handleSetActive(e: CustomEvent<FSNode>) {
-		setActive(relpath(e.detail.path, root.path));
+		const path = relpath(e.detail.path, root.path);
+		if (!updatePath(path)) {
+			// Path not changed, call setActive to toggle the node
+			setActive(path);
+		}
 	}
 
 	async function handleRename(e: CustomEvent<string>) {
@@ -206,7 +213,7 @@
 		await provider.rename(active.path, newPath);
 		if (active.parent) {
 			await loadChildren(active.parent, true);
-			await setActive(relpath(newPath, root.path));
+			updatePath(relpath(newPath, root.path));
 		}
 	}
 
@@ -217,7 +224,7 @@
 		newPath += e.detail;
 		await provider.mkdir(newPath);
 		await loadChildren(active, true);
-		await setActive(relpath(newPath, root.path));
+		updatePath(relpath(newPath, root.path));
 	}
 
 	async function handleNewFile(e: CustomEvent<string>) {
@@ -232,7 +239,7 @@
 			// the file is created even an error is returned
 		}
 		await loadChildren(active, true);
-		await setActive(relpath(newPath, root.path));
+		updatePath(relpath(newPath, root.path));
 	}
 
 	onMount(() => {
