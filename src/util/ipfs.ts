@@ -4,7 +4,7 @@ import { loadJs } from './base';
 let promise: Promise<IPFS>;
 
 async function createIpfsOnce() {
-	await loadJs('https://cdn.jsdelivr.net/npm/ipfs-core@0.17.0/dist/index.min.js');
+	await loadJs('https://cdn.jsdelivr.net/npm/ipfs-core@0.18.0/dist/index.min.js');
 	const ipfs: IPFS = await window.IpfsCore.create();
 	window.ipfs = ipfs;
 	ipfs.swarm.connect(
