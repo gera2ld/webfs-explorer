@@ -126,7 +126,7 @@
 	{#each items as { node, level } (node.path)}
 		<div
 			class={`flex items-center px-4 cursor-pointer ${
-				active === node ? 'bg-gray-600 text-gray-200' : 'text-gray-400'
+				active === node ? 'bg-zinc-600 text-zinc-200' : 'text-zinc-400'
 			}`}
 			style={`padding-left:${16 * level}px`}
 			title={node.name}
@@ -145,7 +145,7 @@
 			{#if context?.node === node}
 				<input
 					bind:this={elInput}
-					class="flex-1 min-w-0 px-1 bg-gray-400 dark:bg-gray-900"
+					class="flex-1 min-w-0 px-1 bg-zinc-400 dark:bg-zinc-900"
 					bind:value={context.value}
 					on:keydown={handleKey}
 					on:blur={handleConfirm}

@@ -269,7 +269,7 @@
 </script>
 
 <div class="w-screen h-screen flex flex-col">
-	<header class="flex border-b border-gray-400 px-4 py-2">
+	<header class="flex border-b border-zinc-400 px-4 py-2">
 		<form on:submit|preventDefault={() => handleUpdate()}>
 			<select bind:value={providerScheme}>
 				{#each Object.keys(providerFactories) as scheme}
@@ -296,7 +296,7 @@
 		{/if}
 	</header>
 	<div class="flex flex-1 min-h-0">
-		<div class="flex flex-col w-[320px] border-r border-gray-400 px-4 overflow-auto">
+		<div class="flex flex-col w-[320px] border-r border-zinc-400 px-4 overflow-auto">
 			{#if !provider.readOnly}
 				<div class="text-right">
 					<button class="ml-2" on:click={createAction('newDir', true)}>
@@ -315,7 +315,7 @@
 			{/if}
 			<div class="flex-1 pb-4">
 				{#if loading}
-					<div class="text-gray-400">Loading...</div>
+					<div class="text-zinc-400">Loading...</div>
 				{:else}
 					<NodeTree
 						{root}
@@ -332,9 +332,9 @@
 		</div>
 		<div class="flex-1 min-w-0 flex flex-col">
 			{#if loading || (active && !activeContent)}
-				<div class="h-full flex items-center justify-center text-gray-400">Loading...</div>
+				<div class="h-full flex items-center justify-center text-zinc-400">Loading...</div>
 			{:else if !activeContent || activeContent.type === 'directory'}
-				<div class="h-full flex items-center justify-center text-gray-400">
+				<div class="h-full flex items-center justify-center text-zinc-400">
 					Pick a file to view / edit its content
 				</div>
 			{:else if activeContent.type === 'text'}
@@ -371,7 +371,7 @@
 </div>
 {#if message}
 	<div
-		class={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-8 bg-gray-100 dark:bg-gray-900 border border-gray-400 dark:border-gray-600 ${
+		class={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-8 bg-zinc-100 dark:bg-zinc-900 border border-zinc-400 dark:border-zinc-600 ${
 			message.type === 'error'
 				? 'text-red-500 dark:text-red-600 border-red-500 dark:border-red-600'
 				: 'dark:text-yellow-600'
