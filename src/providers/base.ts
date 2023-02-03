@@ -1,4 +1,5 @@
-import type { FSNode, IProviderOption, ISupportedUrl, ProviderScheme } from '../types';
+import type { FSNode, IProviderProps, ISupportedUrl, ProviderScheme } from '../types';
+import { parseUrl } from '../util';
 
 export abstract class IFileProvider {
 	static scheme: ProviderScheme;
@@ -12,10 +13,13 @@ export abstract class IFileProvider {
 	abstract readDir(filePath: string): Promise<FSNode[]>;
 	abstract setData(data: ISupportedUrl): Promise<void> | void;
 
-	options: IProviderOption[] = [];
+	options: IProviderProps[] = [];
 
 	update(options: Record<string, string>): ISupportedUrl | void {
-		// noop
+		let { pathname } = options;
+		if (/^\/ip[fn]s\//.test(pathname)) pathname = `${pathname.slice(1, 5)}:${pathname.slice(6)}`;
+		else if (!/^[\w-]+:/.test(pathname)) pathname = `ipfs:${pathname}`;
+		return parseUrl(pathname);
 	}
 
 	async writeFile(ipfsPath: string, content: string) {
