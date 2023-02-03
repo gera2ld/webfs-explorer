@@ -62,13 +62,7 @@ export class NPMProvider extends IFileProvider {
 		if (this.data) {
 			let registry = this.data.query?.registry || DEFAULT_REGISTRY;
 			if (!registry.includes('://')) registry = `https://${registry}`;
-			let pkgName = this.data.pathname;
-			let versionName = 'latest';
-			const i = pkgName.indexOf('@', 1);
-			if (i > 0) {
-				versionName = pkgName.slice(i + 1);
-				pkgName = pkgName.slice(0, i);
-			}
+			const { name: pkgName, version: versionName } = parsePkgVersion(this.data.pathname);
 			const metaUrl = `${registry}/${pkgName}`;
 			const meta =
 				this._pkgData?.metaUrl === metaUrl
@@ -133,11 +127,13 @@ export class NPMProvider extends IFileProvider {
 	}
 
 	update(options: Record<string, string>) {
-		let { pathname, version, registry } = options;
-		if (pathname == null) pathname = this.data?.pathname.split('@')[0] || '';
-		if (version == null) version = this.data?.pathname.split('@')[1] || '';
+		let { version, registry } = options;
+		const { name: pkgName, version: currentVersion } = parsePkgVersion(
+			options.pathname ?? this.data?.pathname ?? ''
+		);
+		version ??= currentVersion;
 		if (version === 'latest') version = '';
-		if (registry == null) registry = this.data?.query?.registry || '';
+		registry ??= this.data?.query?.registry || '';
 		if (registry.startsWith('https://')) registry = registry.slice(7);
 		if (registry === DEFAULT_REGISTRY) registry = '';
 		const query: Record<string, string> = {
@@ -151,7 +147,7 @@ export class NPMProvider extends IFileProvider {
 			...this.data,
 			provider: NPMProvider.scheme,
 			query,
-			pathname: [pathname, version].filter(Boolean).join('@'),
+			pathname: [pkgName, version].filter(Boolean).join('@'),
 		};
 		return data;
 	}
@@ -252,4 +248,14 @@ async function loadJson<T = unknown>(url: string) {
 	const data = (await resp.json()) as T;
 	if (!resp.ok) throw { resp, data };
 	return data;
+}
+
+function parsePkgVersion(name: string) {
+	const i = name.indexOf('@', 1);
+	let version = 'latest';
+	if (i > 0) {
+		version = name.slice(i + 1);
+		name = name.slice(0, i);
+	}
+	return { name, version };
 }

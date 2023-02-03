@@ -63,38 +63,40 @@
 		}
 	}
 
-	async function checkProvider(url: string) {
-		const data = parseUrl(url);
-		providerScheme = data.provider;
-		await tick();
-		// TODO skip if url not changed
+	async function checkProvider(data: ISupportedUrl) {
+		if (providerScheme !== data.provider) {
+			providerScheme = data.provider;
+			await tick();
+		}
+		if (provider.data && reprUrl(provider.data) === reprUrl(data)) return;
 		provider.setData(data);
-		root = await provider.stat('');
-		rootUrl = provider.data;
-	}
-
-	async function openPath(url: string, activePath: string) {
 		loading = true;
 		try {
-			await checkProvider(url);
-			inputPath = rootUrl?.pathname ?? '';
-			await setActive(activePath);
+			root = await provider.stat('');
 		} catch (error) {
 			showMessage(`${error}`, 'error');
 			console.error(error);
 		} finally {
 			loading = false;
 		}
+		rootUrl = provider.data;
+		inputPath = rootUrl?.pathname ?? '';
 	}
 
-	function handleUpdate(updates?: Record<string, string>) {
+	async function openPath(url: string, activePath: string) {
+		await checkProvider(parseUrl(url));
+		await setActive(activePath);
+	}
+
+	async function handleUpdate(updates?: Record<string, string>) {
 		const data = provider.update({
 			pathname: inputPath,
 			...updates,
 		});
 		if (!data) return;
-		provider.setData(data);
-		setActive();
+		await checkProvider(data);
+		await setActive();
+		updatePath();
 	}
 
 	async function onHashChange() {
@@ -109,9 +111,12 @@
 		return node;
 	}
 
-	function updatePath(pathFromRoot = '') {
+	function getCurrentPath() {
+		return active ? relpath(active.path, root.path) : '';
+	}
+
+	function updatePath(pathFromRoot = getCurrentPath()) {
 		if (!rootUrl) return;
-		// Update hash first to avoid repetitive loading
 		const hash = window.location.hash.slice(1);
 		const params = new URLSearchParams(hash);
 		params.set(QS_ROOT, reprUrl(rootUrl));
@@ -122,7 +127,7 @@
 		return canUpdate;
 	}
 
-	async function setActive(pathFromRoot = active ? relpath(active.path, root.path) : '') {
+	async function setActive(pathFromRoot = getCurrentPath()) {
 		if (active?.dirty) return;
 		let node = root;
 		const parts = pathFromRoot.split('/').filter(Boolean);
