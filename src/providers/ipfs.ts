@@ -4,36 +4,45 @@ import { arrayFromAsync, mergeUint8Array, createIpfs } from '../util';
 import { IFileProvider } from './base';
 
 export class IPFSProvider extends IFileProvider {
+	static scheme = 'ipfs' as const;
+
 	readOnly = true;
 
-	private root: string;
+	private _root = '';
+	private _ipfsPromise: Promise<IPFS> | undefined;
 
-	constructor(data: ISupportedUrl, private ipfs: IPFS) {
-		super(data);
-		this.root = data.pathname;
+	private _loadIpfs() {
+		this._ipfsPromise ||= createIpfs();
+		return this._ipfsPromise;
+	}
+
+	setData(data: ISupportedUrl) {
+		this.data = data;
+		this._root = data.pathname;
 	}
 
 	async stat(ipfsPath: string) {
-		return this.internalStat(ipfsPath);
+		return this._internalStat(ipfsPath);
 	}
 
 	async exists(filePath: string) {
 		try {
-			await this.internalStat(filePath);
+			await this._internalStat(filePath);
 			return true;
 		} catch {
 			return false;
 		}
 	}
 
-	private getFullPath(filePath: string) {
-		const fullPath = [this.root, filePath].filter(Boolean).join('/');
+	private _getFullPath(filePath: string) {
+		const fullPath = [this._root, filePath].filter(Boolean).join('/');
 		return fullPath;
 	}
 
-	private async internalStat(filePath: string): Promise<IPFSNode> {
-		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
-		const stat = await this.ipfs.files.stat(ipfsPath);
+	private async _internalStat(filePath: string): Promise<IPFSNode> {
+		const ipfs = await this._loadIpfs();
+		const ipfsPath = await ipfs.resolve(this._getFullPath(filePath));
+		const stat = await ipfs.files.stat(ipfsPath);
 		return {
 			name: filePath.split('/').pop() || '',
 			cid: stat.cid.toString(),
@@ -44,14 +53,16 @@ export class IPFSProvider extends IFileProvider {
 	}
 
 	async readFile(filePath: string) {
-		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
-		const buffer = await arrayFromAsync(this.ipfs.cat(ipfsPath));
+		const ipfs = await this._loadIpfs();
+		const ipfsPath = await ipfs.resolve(this._getFullPath(filePath));
+		const buffer = await arrayFromAsync(ipfs.cat(ipfsPath));
 		return mergeUint8Array(buffer);
 	}
 
 	async readDir(filePath: string) {
-		const ipfsPath = await this.ipfs.resolve(this.getFullPath(filePath));
-		const items = await arrayFromAsync(this.ipfs.ls(ipfsPath));
+		const ipfs = await this._loadIpfs();
+		const ipfsPath = await ipfs.resolve(this._getFullPath(filePath));
+		const items = await arrayFromAsync(ipfs.ls(ipfsPath));
 		const children = await Promise.all(
 			items.map(({ name, cid, type, size }) => {
 				const childPath = [filePath.replace(/\/$/, ''), name].join('/');
@@ -66,9 +77,4 @@ export class IPFSProvider extends IFileProvider {
 		);
 		return children;
 	}
-}
-
-export async function create(data: ISupportedUrl) {
-	const ipfs = await createIpfs();
-	return new IPFSProvider(data, ipfs);
 }

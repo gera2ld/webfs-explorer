@@ -1,20 +1,25 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import NodeTree from '../components/node-tree.svelte';
 	import MonacoEditor from '../components/monaco-editor.svelte';
 	import ImageViewer from '../components/image-viewer.svelte';
 	import ProviderOption from '../components/provider-option.svelte';
-	import type { FSNode, FileData, ISupportedUrl } from '../types';
+	import type { FSNode, FileData, ProviderScheme, ISupportedUrl } from '../types';
 	import type { IFileProvider } from '../providers';
-	import { createProvider } from '../providers';
+	import { IPFSProvider, MFSProvider, NPMProvider } from '../providers';
 	import { detectFile, parseUrl, reprUrl, relpath } from '../util';
 
 	const QS_ROOT = 'r';
 	const QS_PATH = 'p';
 
-	let provider: IFileProvider;
-	let rootUrl: ISupportedUrl;
+	const providerFactories = {
+		[IPFSProvider.scheme]: IPFSProvider,
+		[MFSProvider.scheme]: MFSProvider,
+		[NPMProvider.scheme]: NPMProvider,
+	};
+	const providers: Partial<Record<ProviderScheme, IFileProvider>> = {};
+
 	let root: FSNode;
 	let active: FSNode;
 	let action = '';
@@ -23,9 +28,20 @@
 	let activeContent: FileData;
 	let message: { type: 'info' | 'error'; content: string } | null;
 	let getContent: () => string;
-	let options: Record<string, string> = {};
+	let providerScheme: ProviderScheme = 'npm';
+	let rootUrl: ISupportedUrl | undefined;
 
+	$: provider = providerScheme && getProvider();
 	$: if (active) updateActiveContent();
+
+	function getProvider() {
+		let provider = providers[providerScheme];
+		if (!provider) {
+			provider = new providerFactories[providerScheme]();
+			providers[providerScheme] = provider;
+		}
+		return provider;
+	}
 
 	async function loadChildren(node: FSNode, force = false) {
 		if (!node.children || force) {
@@ -48,24 +64,20 @@
 	}
 
 	async function checkProvider(url: string) {
-		if (provider && reprUrl(provider.data) === url) return;
 		const data = parseUrl(url);
-		provider = await createProvider(data);
+		providerScheme = data.provider;
+		await tick();
+		// TODO skip if url not changed
+		provider.setData(data);
 		root = await provider.stat('');
 		rootUrl = provider.data;
-		options = provider.options.reduce((prev, item) => {
-			prev[item.name] = item.value;
-			return prev;
-		}, {} as Record<string, string>);
 	}
 
-	async function openPath(
-		url = 'ipfs:/',
-		activePath = active ? relpath(active.path, root.path) : ''
-	) {
+	async function openPath(url: string, activePath: string) {
 		loading = true;
 		try {
 			await checkProvider(url);
+			inputPath = rootUrl?.pathname ?? '';
 			await setActive(activePath);
 		} catch (error) {
 			showMessage(`${error}`, 'error');
@@ -75,19 +87,20 @@
 		}
 	}
 
-	function handleUpdate() {
-		const data = provider.setOptions(options);
+	function handleUpdate(updates?: Record<string, string>) {
+		const data = provider.update({
+			pathname: inputPath,
+			...updates,
+		});
 		if (!data) return;
-		const url = reprUrl(data);
-		if (inputPath === url) return;
-		openPath((inputPath = url));
+		provider.setData(data);
+		setActive();
 	}
 
 	async function onHashChange() {
 		const params = new URLSearchParams(window.location.hash.slice(1));
 		let cwd = params.get(QS_ROOT) ?? 'npm:@gera2ld/tarjs';
 		let active = params.get(QS_PATH) ?? '';
-		inputPath = cwd;
 		await openPath(cwd, active);
 	}
 
@@ -97,6 +110,7 @@
 	}
 
 	function updatePath(pathFromRoot = '') {
+		if (!rootUrl) return;
 		// Update hash first to avoid repetitive loading
 		const hash = window.location.hash.slice(1);
 		const params = new URLSearchParams(hash);
@@ -108,7 +122,7 @@
 		return canUpdate;
 	}
 
-	async function setActive(pathFromRoot = '') {
+	async function setActive(pathFromRoot = active ? relpath(active.path, root.path) : '') {
 		if (active?.dirty) return;
 		let node = root;
 		const parts = pathFromRoot.split('/').filter(Boolean);
@@ -125,10 +139,6 @@
 		if (node.type === 'directory') node.expand = active === node ? !node.expand : true;
 		active = await updateNode(node);
 		root = root;
-	}
-
-	function handleOpen() {
-		openPath(inputPath, '');
 	}
 
 	function handleDownload() {
@@ -251,26 +261,19 @@
 
 <div class="w-screen h-screen flex flex-col">
 	<header class="flex border-b border-gray-400 px-4 py-2">
-		<form on:submit|preventDefault={handleOpen}>
-			<Icon icon="tabler:prompt" />
-			<input
-				class="bg-transparent w-[400px] border-b border-gray-300 text-xs"
-				placeholder="IPFS path"
-				bind:value={inputPath}
-			/>
-			<button type="submit" title="Go"><Icon icon="bx:rocket" /></button>
-		</form>
-		{#if provider?.options.length}
-			<form>
-				{#each provider.options as option}
-					<ProviderOption
-						props={option}
-						bind:value={options[option.name]}
-						onUpdate={handleUpdate}
-					/>
+		<form on:submit|preventDefault={() => handleUpdate()}>
+			<select bind:value={providerScheme}>
+				{#each Object.keys(providerFactories) as scheme}
+					<option>{scheme}</option>
 				{/each}
-			</form>
-		{/if}
+			</select>
+			<Icon icon="tabler:prompt" />
+			<input class="w-[400px]" bind:value={inputPath} />
+			<button type="submit" title="Go"><Icon icon="bx:rocket" /></button>
+			{#each provider.options as option}
+				<ProviderOption data={rootUrl} props={option} onUpdate={handleUpdate} />
+			{/each}
+		</form>
 		<div class="flex-1" />
 		{#if activeContent && active.cid}
 			<button class="ml-2" data-text={active.cid} on:click|preventDefault={handleCopy}>CID</button>
@@ -285,7 +288,7 @@
 	</header>
 	<div class="flex flex-1 min-h-0">
 		<div class="flex flex-col w-[320px] border-r border-gray-400 px-4 overflow-auto">
-			{#if provider && !provider.readOnly}
+			{#if !provider.readOnly}
 				<div class="text-right">
 					<button class="ml-2" on:click={createAction('newDir', true)}>
 						<Icon icon="ant-design:folder-add-outlined" />

@@ -7,36 +7,53 @@ import { IFileProvider } from './base';
 const QS_API = 'api';
 
 export class MFSProvider extends IFileProvider {
+	static scheme = 'ipfs-mfs' as const;
+
 	readOnly = false;
 
-	private ipfsOptions: { cidVersion: CIDVersion } = { cidVersion: 1 };
-	private root: string;
+	private _ipfsOptions: { cidVersion: CIDVersion } = { cidVersion: 1 };
+	private _root = '';
+	private _ipfs: Promise<IPFSHTTPClient> | undefined;
 
-	constructor(data: ISupportedUrl, private ipfs: IPFSHTTPClient) {
-		super(data);
-		this.root = data.pathname;
+	private async _loadIpfsOnce() {
+		const { create } = await import('ipfs-http-client');
+		return create({
+			url:
+				new URLSearchParams(window.location.hash.slice(1)).get(QS_API) || 'http://127.0.0.1:5001',
+		});
+	}
+
+	private _loadIpfs() {
+		this._ipfs ||= this._loadIpfsOnce();
+		return this._ipfs;
+	}
+
+	setData(data: ISupportedUrl) {
+		this.data = data;
+		this._root = data.pathname;
 	}
 
 	async stat(filePath: string) {
-		return this.internalStat(filePath);
+		return this._internalStat(filePath);
 	}
 
 	async exists(filePath: string) {
 		try {
-			await this.internalStat(filePath);
+			await this._internalStat(filePath);
 			return true;
 		} catch {
 			return false;
 		}
 	}
 
-	private getFullPath(filePath: string) {
-		const fullPath = [this.root, filePath].filter(Boolean).join('/');
+	private _getFullPath(filePath: string) {
+		const fullPath = [this._root, filePath].filter(Boolean).join('/');
 		return fullPath;
 	}
 
-	private async internalStat(filePath: string): Promise<IPFSNode> {
-		const stat = await this.ipfs.files.stat(this.getFullPath(filePath));
+	private async _internalStat(filePath: string): Promise<IPFSNode> {
+		const ipfs = await this._loadIpfs();
+		const stat = await ipfs.files.stat(this._getFullPath(filePath));
 		return {
 			name: filePath.split('/').pop() || '',
 			cid: stat.cid.toString(),
@@ -47,12 +64,14 @@ export class MFSProvider extends IFileProvider {
 	}
 
 	async readFile(filePath: string) {
-		const buffer = await arrayFromAsync(this.ipfs.files.read(this.getFullPath(filePath)));
+		const ipfs = await this._loadIpfs();
+		const buffer = await arrayFromAsync(ipfs.files.read(this._getFullPath(filePath)));
 		return mergeUint8Array(buffer);
 	}
 
 	async readDir(filePath: string) {
-		const items = await arrayFromAsync(this.ipfs.files.ls(this.getFullPath(filePath)));
+		const ipfs = await this._loadIpfs();
+		const items = await arrayFromAsync(ipfs.files.ls(this._getFullPath(filePath)));
 		const children = await Promise.all(
 			items.map(({ name, cid, type, size }) => {
 				const childPath = [filePath.replace(/\/$/, ''), name].join('/');
@@ -69,8 +88,9 @@ export class MFSProvider extends IFileProvider {
 	}
 
 	async writeFile(filePath: string, content: string) {
-		await this.ipfs.files.write(this.getFullPath(filePath), content, {
-			...this.ipfsOptions,
+		const ipfs = await this._loadIpfs();
+		await ipfs.files.write(this._getFullPath(filePath), content, {
+			...this._ipfsOptions,
 			create: true,
 			truncate: true,
 		});
@@ -78,26 +98,21 @@ export class MFSProvider extends IFileProvider {
 
 	async rename(sourcePath: string, filePath: string) {
 		if (await this.exists(filePath)) throw new Error(`Path already exists: ${filePath}`);
-		await this.ipfs.files.mv(
-			this.getFullPath(sourcePath),
-			this.getFullPath(filePath),
-			this.ipfsOptions
+		const ipfs = await this._loadIpfs();
+		await ipfs.files.mv(
+			this._getFullPath(sourcePath),
+			this._getFullPath(filePath),
+			this._ipfsOptions
 		);
 	}
 
 	async delete(filePath: string) {
-		await this.ipfs.files.rm(this.getFullPath(filePath), { recursive: true });
+		const ipfs = await this._loadIpfs();
+		await ipfs.files.rm(this._getFullPath(filePath), { recursive: true });
 	}
 
 	async mkdir(filePath: string) {
-		await this.ipfs.files.mkdir(this.getFullPath(filePath), { ...this.ipfsOptions, parents: true });
+		const ipfs = await this._loadIpfs();
+		await ipfs.files.mkdir(this._getFullPath(filePath), { ...this._ipfsOptions, parents: true });
 	}
-}
-
-export async function create(data: ISupportedUrl) {
-	const { create } = await import('ipfs-http-client');
-	const ipfs = create({
-		url: new URLSearchParams(window.location.hash.slice(1)).get(QS_API) || 'http://127.0.0.1:5001',
-	});
-	return new MFSProvider(data, ipfs);
 }

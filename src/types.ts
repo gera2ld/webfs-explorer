@@ -1,5 +1,7 @@
+export type ProviderScheme = 'ipfs' | 'ipfs-mfs' | 'npm';
+
 export interface ISupportedUrl {
-	provider: 'ipfs' | 'ipfs-mfs' | 'npm';
+	provider: ProviderScheme;
 	pathname: string;
 	query?: Record<string, string>;
 }
@@ -36,20 +38,28 @@ export type FileData =
 			content: null;
 	  };
 
-export interface IProviderSelectOption {
+export interface IProviderSelectData {
+	value: string;
+	options: Array<{ title: string; value: string }>;
+}
+
+export interface IProviderSelectProps {
 	type: 'select';
 	name: string;
 	label?: string;
-	value: string;
-	data: Array<{ title: string; value: string }>;
+	data: () => Promise<IProviderSelectData>;
 }
 
-export interface IProviderInputOption {
+export interface IProviderInputData {
+	value: string;
+	options?: string[];
+}
+
+export interface IProviderInputProps {
 	type: 'input';
 	name: string;
 	label?: string;
-	value: string;
-	data?: string[];
+	data: () => Promise<IProviderInputData>;
 }
 
-export type IProviderOption = IProviderSelectOption | IProviderInputOption;
+export type IProviderProps = IProviderSelectProps | IProviderInputProps;

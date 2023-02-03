@@ -1,13 +1,13 @@
 import { TarFileType } from '@gera2ld/tarjs';
 import type { ITarFileInfo } from '@gera2ld/tarjs';
-import type { FSNode, IProviderInputOption, IProviderSelectOption, ISupportedUrl } from '../types';
+import type { FSNode, IProviderInputProps, IProviderSelectProps, ISupportedUrl } from '../types';
 import { IFileProvider } from './base';
 
 interface TarFileItem extends ITarFileInfo {
 	content: Blob;
 }
 
-interface IRegistryMeta {
+interface IPackageMeta {
 	name: string;
 	'dist-tags': Record<string, string>;
 	versions: Record<
@@ -20,87 +20,158 @@ interface IRegistryMeta {
 	>;
 }
 
+interface IPackageData {
+	metaUrl: string;
+	meta: IPackageMeta;
+	fileMap: Map<string, TarFileItem>;
+	dirMap: Map<string, Set<string>>;
+	versionName: string;
+}
+
 const DEFAULT_REGISTRY = 'registry.npmjs.org';
 const DEFAULT_REGISTRIES = [DEFAULT_REGISTRY, 'registry.yarnpkg.com', 'npm.pkg.github.com'];
 
+const EMPTY_PACKAGE_DATA: IPackageData = {
+	metaUrl: '',
+	meta: {
+		name: '',
+		'dist-tags': {},
+		versions: {},
+	},
+	fileMap: new Map(),
+	dirMap: new Map(),
+	versionName: '',
+};
+
 export class NPMProvider extends IFileProvider {
+	static scheme = 'npm' as const;
+
 	readOnly = true;
 
-	constructor(
-		data: ISupportedUrl,
-		private fileMap: Map<string, TarFileItem>,
-		private dirMap: Map<string, Set<string>>,
-		private versionName: string,
-		private meta: IRegistryMeta
-	) {
-		super(data);
-		this.options = [this.getVersionInfo(), this.getRegistryInfo()];
+	private _pkgData = EMPTY_PACKAGE_DATA;
+	private _loading: Promise<IPackageData> | undefined;
+
+	options = [this._getVersionInfo(), this._getRegistryInfo()];
+
+	async setData(data: ISupportedUrl) {
+		this.data = data;
+		await this._loadData(true);
 	}
 
-	private getVersionInfo(): IProviderSelectOption {
-		const distTags = Object.entries(this.meta['dist-tags']).map(([tag, version]) => ({
-			title: `${tag} (${version})`,
-			value: tag,
-		}));
-		const versions = Object.keys(this.meta.versions)
-			.map((version) => ({ title: version, value: version }))
-			.reverse();
+	private async _loadDataOnce() {
+		if (this.data) {
+			let registry = this.data.query?.registry || DEFAULT_REGISTRY;
+			if (!registry.includes('://')) registry = `https://${registry}`;
+			let pkgName = this.data.pathname;
+			let versionName = 'latest';
+			const i = pkgName.indexOf('@', 1);
+			if (i > 0) {
+				versionName = pkgName.slice(i + 1);
+				pkgName = pkgName.slice(0, i);
+			}
+			const metaUrl = `${registry}/${pkgName}`;
+			const meta =
+				this._pkgData?.metaUrl === metaUrl
+					? this._pkgData.meta
+					: await loadJson<IPackageMeta>(metaUrl);
+			const distTags = meta['dist-tags'];
+			const versionInfo = meta.versions[distTags[versionName] || versionName];
+			const tarUrl = versionInfo.dist.tarball;
+			const { fileMap, dirMap } = await loadTarballByUrl(tarUrl);
+			this._pkgData = {
+				metaUrl,
+				meta,
+				fileMap,
+				dirMap,
+				versionName,
+			};
+		} else {
+			this._pkgData = EMPTY_PACKAGE_DATA;
+		}
+		return this._pkgData;
+	}
+
+	private _loadData(force = false) {
+		if (!this._loading || force) {
+			this._loading = this._loadDataOnce();
+		}
+		return this._loading;
+	}
+
+	private _getVersionInfo(): IProviderSelectProps {
 		return {
 			type: 'select',
 			name: 'version',
 			label: 'Versions:',
-			value: this.versionName,
-			data: [...distTags, ...versions],
+			data: async () => {
+				const pkgData = await this._loadData();
+				const distTags = Object.entries(pkgData.meta['dist-tags']).map(([tag, version]) => ({
+					title: `${tag} (${version})`,
+					value: tag,
+				}));
+				const versions = Object.keys(pkgData.meta.versions)
+					.map((version) => ({ title: version, value: version }))
+					.reverse();
+				return {
+					value: pkgData.versionName,
+					options: [...distTags, ...versions],
+				};
+			},
 		};
 	}
 
-	private getRegistryInfo(): IProviderInputOption {
+	private _getRegistryInfo(): IProviderInputProps {
 		return {
 			type: 'input',
 			name: 'registry',
 			label: 'Registry:',
-			value: this.data.query?.registry || DEFAULT_REGISTRY,
-			data: DEFAULT_REGISTRIES,
+			data: async () => ({
+				value: this.data?.query?.registry || DEFAULT_REGISTRY,
+				options: DEFAULT_REGISTRIES,
+			}),
 		};
 	}
 
-	setOptions(options: Record<string, string>) {
-		let { version, registry } = options;
+	update(options: Record<string, string>) {
+		let { pathname, version, registry } = options;
+		if (pathname == null) pathname = this.data?.pathname.split('@')[0] || '';
+		if (version == null) version = this.data?.pathname.split('@')[1] || '';
 		if (version === 'latest') version = '';
+		if (registry == null) registry = this.data?.query?.registry || '';
 		if (registry.startsWith('https://')) registry = registry.slice(7);
 		if (registry === DEFAULT_REGISTRY) registry = '';
 		const query: Record<string, string> = {
-			...this.data.query,
+			...this.data?.query,
 			registry,
 		};
 		Object.entries(query).forEach(([key, value]) => {
-			if (value == null) delete query[key];
+			if (value == '') delete query[key];
 		});
 		const data: ISupportedUrl = {
 			...this.data,
+			provider: NPMProvider.scheme,
 			query,
-			pathname: [this.meta.name, version && version !== 'latest' ? version : '']
-				.filter(Boolean)
-				.join('@'),
+			pathname: [pathname, version].filter(Boolean).join('@'),
 		};
 		return data;
 	}
 
 	async stat(filePath: string) {
-		return this.internalStat(filePath);
+		return this._internalStat(filePath);
 	}
 
 	async exists(filePath: string) {
 		try {
-			this.internalStat(filePath);
+			await this._internalStat(filePath);
 			return true;
 		} catch {
 			return false;
 		}
 	}
 
-	private internalStat(filePath: string): FSNode {
-		if (this.dirMap.has(filePath)) {
+	private async _internalStat(filePath: string): Promise<FSNode> {
+		const { dirMap, fileMap } = await this._loadData();
+		if (dirMap.has(filePath)) {
 			return {
 				name: filePath.split('/').pop() || '',
 				type: 'directory',
@@ -108,7 +179,7 @@ export class NPMProvider extends IFileProvider {
 				path: filePath,
 			};
 		}
-		const file = this.fileMap.get(filePath);
+		const file = fileMap.get(filePath);
 		if (!file) throw new Error('File not exists');
 		return {
 			name: filePath.split('/').pop() || '',
@@ -119,44 +190,25 @@ export class NPMProvider extends IFileProvider {
 	}
 
 	async readFile(filePath: string) {
-		const file = this.fileMap.get(filePath);
+		const { fileMap } = await this._loadData();
+		const file = fileMap.get(filePath);
 		if (!file) throw new Error('File not exists');
 		const buffer = await file.content.arrayBuffer();
 		return new Uint8Array(buffer);
 	}
 
 	async readDir(filePath: string) {
-		return Array.from(this.dirMap.get(filePath) || [], (name) => this.internalStat(name)).sort(
-			(a, b) => {
-				const keyA = a.type[0] + a.name;
-				const keyB = b.type[0] + b.name;
-				return keyA < keyB ? -1 : 1;
-			}
+		const { dirMap } = await this._loadData();
+		const files = await Promise.all(
+			Array.from(dirMap.get(filePath) || [], (name) => this._internalStat(name))
 		);
+		files.sort((a, b) => {
+			const keyA = a.type[0] + a.name;
+			const keyB = b.type[0] + b.name;
+			return keyA < keyB ? -1 : 1;
+		});
+		return files;
 	}
-}
-
-export async function create(data: ISupportedUrl) {
-	let registry = data.query?.registry || DEFAULT_REGISTRY;
-	if (!registry.includes('://')) registry = `https://${registry}`;
-	let pkgName = data.pathname;
-	let versionName = 'latest';
-	const i = pkgName.indexOf('@', 1);
-	if (i > 0) {
-		versionName = pkgName.slice(i + 1);
-		pkgName = pkgName.slice(0, i);
-	}
-	const metaUrl = `${registry}/${pkgName}`;
-	const meta = await loadJson<IRegistryMeta>(metaUrl);
-	return createWithVersion(data, meta, versionName);
-}
-
-async function createWithVersion(data: ISupportedUrl, meta: IRegistryMeta, versionName: string) {
-	const distTags = meta['dist-tags'];
-	const versionInfo = meta.versions[distTags[versionName] || versionName];
-	const tarUrl = versionInfo.dist.tarball;
-	const { fileMap, dirMap } = await loadTarballByUrl(tarUrl);
-	return new NPMProvider(data, fileMap, dirMap, versionName, meta);
 }
 
 async function loadTarball(buffer: ArrayBuffer) {
