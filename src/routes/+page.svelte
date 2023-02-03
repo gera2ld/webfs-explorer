@@ -21,7 +21,7 @@
 	const providers: Partial<Record<ProviderScheme, IFileProvider>> = {};
 
 	let root: FSNode;
-	let active: FSNode;
+	let active: FSNode | undefined;
 	let action = '';
 	let inputPath = '';
 	let loading = true;
@@ -54,6 +54,7 @@
 	}
 
 	async function updateActiveContent() {
+		if (!active) return;
 		if (active.type === 'directory') {
 			activeContent = { type: 'directory', content: null };
 			if (await loadChildren(active)) active = active;
@@ -95,15 +96,15 @@
 		});
 		if (!data) return;
 		await checkProvider(data);
-		await setActive();
-		updatePath();
+		const pathFromRoot = getCurrentPath();
+		updatePath(pathFromRoot);
 	}
 
 	async function onHashChange() {
 		const params = new URLSearchParams(window.location.hash.slice(1));
 		let cwd = params.get(QS_ROOT) ?? 'npm:@gera2ld/tarjs';
-		let active = params.get(QS_PATH) ?? '';
-		await openPath(cwd, active);
+		let activePath = params.get(QS_PATH) ?? '';
+		await openPath(cwd, activePath);
 	}
 
 	async function updateNode(node: FSNode) {
@@ -115,7 +116,7 @@
 		return active ? relpath(active.path, root.path) : '';
 	}
 
-	function updatePath(pathFromRoot = getCurrentPath()) {
+	function updatePath(pathFromRoot: string) {
 		if (!rootUrl) return;
 		const hash = window.location.hash.slice(1);
 		const params = new URLSearchParams(hash);
@@ -127,7 +128,7 @@
 		return canUpdate;
 	}
 
-	async function setActive(pathFromRoot = getCurrentPath()) {
+	async function setActive(pathFromRoot: string) {
 		if (active?.dirty) return;
 		let node = root;
 		const parts = pathFromRoot.split('/').filter(Boolean);
@@ -194,11 +195,11 @@
 
 	async function handleRevert() {
 		if (activeContent?.type !== 'text') return;
-		active.dirty = false;
+		if (active) active.dirty = false;
 	}
 
 	async function handleSave() {
-		if (activeContent?.type !== 'text') return;
+		if (!active || activeContent?.type !== 'text') return;
 		await provider.writeFile(active.path, getContent());
 		active = await updateNode(active);
 		active.dirty = false;
@@ -207,7 +208,7 @@
 	function createAction(name: string, expand = false) {
 		return () => {
 			action = name;
-			if (expand) active.expand = true;
+			if (expand && active) active.expand = true;
 		};
 	}
 
@@ -220,6 +221,7 @@
 	}
 
 	async function handleRename(e: CustomEvent<string>) {
+		if (!active) return;
 		action = '';
 		const newName = e.detail;
 		const newPath = active.path.replace(/\/[^/]+$/, `/${newName}`);
@@ -231,6 +233,7 @@
 	}
 
 	async function handleNewDir(e: CustomEvent<string>) {
+		if (!active) return;
 		action = '';
 		let newPath = active.path;
 		if (!newPath.endsWith('/')) newPath += '/';
@@ -241,6 +244,7 @@
 	}
 
 	async function handleNewFile(e: CustomEvent<string>) {
+		if (!active) return;
 		action = '';
 		let newPath = active.path;
 		if (!newPath.endsWith('/')) newPath += '/';
@@ -280,7 +284,7 @@
 			{/each}
 		</form>
 		<div class="flex-1" />
-		{#if activeContent && active.cid}
+		{#if activeContent && active?.cid}
 			<button class="ml-2" data-text={active.cid} on:click|preventDefault={handleCopy}>CID</button>
 			<button
 				class="ml-2"
@@ -344,11 +348,11 @@
 					class="flex-1"
 					language={activeContent.language}
 					value={activeContent.content}
-					dirty={active.dirty}
+					dirty={active?.dirty}
 					readOnly={provider.readOnly}
 					bind:getContent
 					on:change={() => {
-						active.dirty = true;
+						if (active) active.dirty = true;
 					}}
 				/>
 			{:else if activeContent.type === 'image'}
