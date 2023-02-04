@@ -8,7 +8,7 @@ const rules: Array<[lang: string, suffixRule: RegExp, contentRule?: RegExp]> = [
 	['html', /^html$/, /^\s*<[!\w]/],
 	['markdown', /^md$/],
 	['go', /^go$/],
-	['json', /^json$/],
+	['json', /^(json|webmanifest)$/],
 ];
 
 function detectTextFile(name: string, content: string) {

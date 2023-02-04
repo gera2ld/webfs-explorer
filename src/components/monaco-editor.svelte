@@ -47,6 +47,7 @@
 		editor = monaco.editor.create(el, {
 			value: '',
 			automaticLayout: true,
+			wordWrap: 'on',
 		});
 	});
 </script>
