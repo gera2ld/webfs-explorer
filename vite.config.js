@@ -1,4 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
+import { viteExternalsPlugin } from 'vite-plugin-externals';
 
 /** @type {import('vite').UserConfig} */
 const config = {
@@ -11,7 +12,13 @@ const config = {
 		global: 'globalThis',
 	},
 
-	plugins: [sveltekit()],
+	plugins: [
+		viteExternalsPlugin({
+			'ipfs-core': 'IpfsCore',
+			'@multiformats/multiaddr': 'MultiformatsMultiaddr',
+		}),
+		sveltekit(),
+	],
 
 	optimizeDeps: {
 		esbuildOptions: {

@@ -4,11 +4,17 @@ import { loadJs } from './base';
 let promise: Promise<IPFS>;
 
 async function createIpfsOnce() {
-	await loadJs('https://cdn.jsdelivr.net/npm/ipfs-core@0.18.0/dist/index.min.js');
-	const ipfs: IPFS = await window.IpfsCore.create();
+	await loadJs(
+		'https://cdn.jsdelivr.net/combine/npm/ipfs-core@0.18.0/dist/index.min.js,npm/@multiformats/multiaddr@11.4.0/dist/index.min.js'
+	);
+	const { create } = await import('ipfs-core');
+	const { multiaddr } = await import('@multiformats/multiaddr');
+	const ipfs: IPFS = await create();
 	window.ipfs = ipfs;
 	ipfs.swarm.connect(
-		'/dns4/ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWGVw5nuix8Hz3cppd6FAtBd4omQxoYH46nW8us527VPTa'
+		multiaddr(
+			'/dns4/swarm.ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWDefwokBAv16Z9CpB5fCxkxa481xB5VHYSesmh4kkFchi'
+		)
 	);
 	return ipfs;
 }
