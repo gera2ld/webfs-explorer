@@ -278,9 +278,9 @@
 			</select>
 			<Icon icon="tabler:prompt" />
 			<input class="w-[400px]" bind:value={inputPath} />
-			<button type="submit" title="Go"><Icon icon="bx:rocket" /></button>
+			<button type="submit" title="Go" class="mr-4"><Icon icon="bx:rocket" /></button>
 			{#each provider.options as option}
-				<ProviderOption data={rootUrl} props={option} onUpdate={handleUpdate} />
+				<ProviderOption className="mr-4" data={rootUrl} props={option} onUpdate={handleUpdate} />
 			{/each}
 		</form>
 		<div class="flex-1" />

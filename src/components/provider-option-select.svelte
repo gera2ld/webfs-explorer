@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { IProviderSelectData, IProviderSelectProps, ISupportedUrl } from '../types';
 
+	export let className = '';
 	export let data: ISupportedUrl | undefined;
 	export let props: IProviderSelectProps;
 	export let onUpdate: (data: Record<string, string>) => void;
@@ -21,7 +22,7 @@
 	}
 </script>
 
-<label class="ml-4">
+<label class={className}>
 	{#if props.label}
 		<span>{props.label}</span>
 	{/if}

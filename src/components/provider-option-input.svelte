@@ -10,6 +10,7 @@
 <script lang="ts">
 	import type { IProviderInputData, IProviderInputProps, ISupportedUrl } from '../types';
 
+	export let className = '';
 	export let data: ISupportedUrl | undefined;
 	export let props: IProviderInputProps;
 	export let onUpdate: (data: Record<string, string>) => void;
@@ -32,7 +33,7 @@
 	}
 </script>
 
-<label class="ml-4">
+<label class={className}>
 	{#if props.label}
 		<span>{props.label}</span>
 	{/if}

@@ -23,7 +23,7 @@ if (browser) {
 			@apply bg-transparent border-b border-zinc-300;
 		}
 		input {
-			@apply bg-transparent border-b border-zinc-300 text-inherit text-xs;
+			@apply bg-transparent border-b border-zinc-300 text-inherit;
 		}
 		.iconify {
 			@apply inline-block;
