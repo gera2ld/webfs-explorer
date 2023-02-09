@@ -15,6 +15,7 @@ const config = {
 	plugins: [
 		viteExternalsPlugin({
 			'ipfs-core': 'IpfsCore',
+			'ipfs-http-client': 'IpfsHttpClient',
 			'@multiformats/multiaddr': 'MultiformatsMultiaddr',
 		}),
 		sveltekit(),

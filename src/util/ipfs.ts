@@ -10,7 +10,6 @@ async function createIpfsOnce() {
 	const { create } = await import('ipfs-core');
 	const { multiaddr } = await import('@multiformats/multiaddr');
 	const ipfs: IPFS = await create();
-	window.ipfs = ipfs;
 	ipfs.swarm.connect(
 		multiaddr(
 			'/dns4/swarm.ipfs.gerald.win/tcp/443/wss/p2p/12D3KooWDefwokBAv16Z9CpB5fCxkxa481xB5VHYSesmh4kkFchi'

@@ -1,7 +1,6 @@
 import type { IPFSHTTPClient } from 'ipfs-http-client';
-import type { CIDVersion } from 'multiformats/cid';
 import type { IPFSNode, ISupportedUrl } from '../types';
-import { arrayFromAsync, mergeUint8Array } from '../util';
+import { arrayFromAsync, loadJs, mergeUint8Array } from '../util';
 import { IFileProvider } from './base';
 
 const QS_API = 'api';
@@ -11,11 +10,12 @@ export class MFSProvider extends IFileProvider {
 
 	readOnly = false;
 
-	private _ipfsOptions: { cidVersion: CIDVersion } = { cidVersion: 1 };
+	private _ipfsOptions: { cidVersion: 0 | 1 } = { cidVersion: 1 };
 	private _root = '';
 	private _ipfs: Promise<IPFSHTTPClient> | undefined;
 
 	private async _loadIpfsOnce() {
+		await loadJs('https://cdn.jsdelivr.net/npm/ipfs-http-client@60.0.0/dist/index.min.js');
 		const { create } = await import('ipfs-http-client');
 		return create({
 			url:
