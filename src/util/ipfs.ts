@@ -7,8 +7,8 @@ async function createIpfsOnce() {
 	await loadJs(
 		'https://cdn.jsdelivr.net/combine/npm/ipfs-core@0.18.0/dist/index.min.js,npm/@multiformats/multiaddr@11.4.0/dist/index.min.js'
 	);
-	const { create } = await import('ipfs-core');
-	const { multiaddr } = await import('@multiformats/multiaddr');
+	const { create } = (await import('ipfs-core')).default;
+	const { multiaddr } = (await import('@multiformats/multiaddr')).default;
 	const ipfs: IPFS = await create();
 	ipfs.swarm.connect(
 		multiaddr(

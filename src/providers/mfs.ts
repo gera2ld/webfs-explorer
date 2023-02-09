@@ -16,7 +16,7 @@ export class MFSProvider extends IFileProvider {
 
 	private async _loadIpfsOnce() {
 		await loadJs('https://cdn.jsdelivr.net/npm/ipfs-http-client@60.0.0/dist/index.min.js');
-		const { create } = await import('ipfs-http-client');
+		const { create } = (await import('ipfs-http-client')).default;
 		return create({
 			url:
 				new URLSearchParams(window.location.hash.slice(1)).get(QS_API) || 'http://127.0.0.1:5001',

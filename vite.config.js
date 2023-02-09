@@ -1,5 +1,4 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { viteExternalsPlugin } from 'vite-plugin-externals';
 
 /** @type {import('vite').UserConfig} */
 const config = {
@@ -13,7 +12,7 @@ const config = {
 	},
 
 	plugins: [
-		viteExternalsPlugin({
+		externals({
 			'ipfs-core': 'IpfsCore',
 			'ipfs-http-client': 'IpfsHttpClient',
 			'@multiformats/multiaddr': 'MultiformatsMultiaddr',
@@ -29,3 +28,19 @@ const config = {
 };
 
 export default config;
+
+/** @param {Record<string, string>} itemMap */
+function externals(externalMap) {
+	return {
+		name: 'external',
+		enforce: 'pre',
+		resolveId(id) {
+			if (externalMap[id]) return '\0' + id;
+		},
+		load(id) {
+			if (id[0] !== '\0') return null;
+			const path = externalMap[id.slice(1)];
+			return path ? `export default ${path}` : null;
+		},
+	};
+}
