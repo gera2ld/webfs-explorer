@@ -8,6 +8,7 @@ export const prerender = true;
 if (browser) {
 	install({
 		presets: [presetAutoprefix(), presetTailwind()],
+		hash: false,
 	});
 	injectGlobal`
 		body {
