@@ -294,6 +294,9 @@
 				URL
 			</button>
 		{/if}
+		<a href="https://github.com/gera2ld/webfs-explorer" target="_blank">
+			<Icon icon="bi:github" />
+		</a>
 	</header>
 	<div class="flex flex-1 min-h-0">
 		<div class="flex flex-col w-[320px] border-r border-zinc-400 px-4 overflow-auto">
