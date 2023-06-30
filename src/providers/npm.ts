@@ -1,5 +1,4 @@
-import { TarFileType } from '@gera2ld/tarjs';
-import type { ITarFileInfo } from '@gera2ld/tarjs';
+import { TarFileType, type ITarFileInfo } from '@gera2ld/tarjs';
 import type { FSNode, IProviderInputProps, IProviderSelectProps, ISupportedUrl } from '../types';
 import { IFileProvider } from './base';
 
@@ -164,7 +163,7 @@ export class NPMProvider extends IFileProvider {
 			return {
 				name: filePath.split('/').pop() || '',
 				type: 'directory',
-				size: 0,
+				size: 0n,
 				path: filePath,
 			};
 		}
@@ -173,7 +172,7 @@ export class NPMProvider extends IFileProvider {
 		return {
 			name: filePath.split('/').pop() || '',
 			type: file.type === TarFileType.Dir ? 'directory' : 'file',
-			size: file.size,
+			size: BigInt(file.size),
 			path: filePath,
 		};
 	}

@@ -6,25 +6,9 @@ const config = {
 		target: 'esnext',
 	},
 
-	define: {
-		'process.env.NODE_DEBUG': 'false',
-		global: 'globalThis',
-	},
-
 	plugins: [
-		externals({
-			'ipfs-core': 'IpfsCore',
-			'ipfs-http-client': 'IpfsHttpClient',
-			'@multiformats/multiaddr': 'MultiformatsMultiaddr',
-		}),
 		sveltekit(),
 	],
-
-	optimizeDeps: {
-		esbuildOptions: {
-			target: 'esnext',
-		},
-	},
 };
 
 export default config;

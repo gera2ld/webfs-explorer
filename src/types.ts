@@ -1,4 +1,4 @@
-export type ProviderScheme = 'ipfs' | 'ipfs-mfs' | 'npm';
+export type ProviderScheme = 'ipfs' | 'npm';
 
 export interface ISupportedUrl {
 	provider: ProviderScheme;
@@ -10,7 +10,7 @@ export interface FSNode {
 	type: 'file' | 'directory';
 	path: string;
 	name: string;
-	size: number;
+	size: bigint;
 	expand?: boolean;
 	children?: FSNode[];
 	parent?: FSNode;

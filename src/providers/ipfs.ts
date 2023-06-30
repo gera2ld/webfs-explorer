@@ -1,6 +1,6 @@
-import type { IPFS } from 'ipfs-core';
+import { CID } from 'multiformats';
 import type { IPFSNode, ISupportedUrl } from '../types';
-import { arrayFromAsync, mergeUint8Array, createIpfs } from '../util';
+import { arrayFromAsync, mergeUint8Array, loadIpfs } from '../util';
 import { IFileProvider } from './base';
 
 export class IPFSProvider extends IFileProvider {
@@ -9,12 +9,6 @@ export class IPFSProvider extends IFileProvider {
 	readOnly = true;
 
 	private _root = '';
-	private _ipfsPromise: Promise<IPFS> | undefined;
-
-	private _loadIpfs() {
-		this._ipfsPromise ||= createIpfs();
-		return this._ipfsPromise;
-	}
 
 	setData(data: ISupportedUrl) {
 		this.data = data;
@@ -39,40 +33,57 @@ export class IPFSProvider extends IFileProvider {
 		return fullPath;
 	}
 
+	private async _resolve(ipfsPath: string) {
+		const [scheme, host, ...rest] = ipfsPath.split('/');
+		const { fs, ipns } = await loadIpfs();
+		let cid: CID;
+		if (scheme === 'ipns') {
+			cid = await ipns.resolveDns(host);
+		} else {
+			cid = CID.parse(host);
+		}
+		const path = rest.filter(Boolean).join('/');
+		if (path) {
+			const res = await fs.stat(cid, { path });
+			cid = res.cid;
+		}
+		return cid;
+	}
+
 	private async _internalStat(filePath: string): Promise<IPFSNode> {
-		const ipfs = await this._loadIpfs();
-		const ipfsPath = await ipfs.resolve(this._getFullPath(filePath));
-		const stat = await ipfs.files.stat(ipfsPath);
+		const { fs } = await loadIpfs();
+		const cid = await this._resolve(this._getFullPath(filePath));
+		const stat = await fs.stat(cid);
 		return {
 			name: filePath.split('/').pop() || '',
 			cid: stat.cid.toString(),
-			type: stat.type,
-			size: stat.size,
+			type: stat.type as IPFSNode['type'],
+			size: stat.fileSize,
 			path: filePath,
 		};
 	}
 
 	async readFile(filePath: string) {
-		const ipfs = await this._loadIpfs();
-		const ipfsPath = await ipfs.resolve(this._getFullPath(filePath));
-		const buffer = await arrayFromAsync(ipfs.cat(ipfsPath));
+		const { fs } = await loadIpfs();
+		const cid = await this._resolve(this._getFullPath(filePath));
+		const buffer = await arrayFromAsync(fs.cat(cid));
 		return mergeUint8Array(buffer);
 	}
 
 	async readDir(filePath: string) {
-		const ipfs = await this._loadIpfs();
-		const ipfsPath = await ipfs.resolve(this._getFullPath(filePath));
-		const items = await arrayFromAsync(ipfs.ls(ipfsPath));
+		const { fs } = await loadIpfs();
+		const cid = await this._resolve(this._getFullPath(filePath));
+		const items = await arrayFromAsync(fs.ls(cid));
 		const children = await Promise.all(
-			items.map(({ name, cid, type, size }) => {
+			items.map(({ name, cid, type, size }): IPFSNode => {
 				const childPath = [filePath.replace(/\/$/, ''), name].join('/');
 				return {
 					name,
 					cid: cid.toString(),
-					type: type === 'file' ? 'file' : 'directory',
+					type: type === 'directory' ? 'directory' : 'file',
 					size,
 					path: childPath,
-				} as IPFSNode;
+				};
 			})
 		);
 		return children;

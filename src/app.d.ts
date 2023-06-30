@@ -11,13 +11,9 @@ declare namespace App {
 }
 
 declare global {
-	import * as IPFSCore from 'ipfs-core';
 	import * as Monaco from 'monaco-editor';
 
 	interface Window {
-		IpfsCore: IPFSCore;
-		ipfs: IPFSCore.IPFS;
-		ipfsPromise: Promise<IPFSCore.IPFS>;
 		monaco: Monaco;
 		monacoPromise: Promise<Monaco>;
 	}

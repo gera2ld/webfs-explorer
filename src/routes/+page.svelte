@@ -7,7 +7,7 @@
 	import ProviderOption from '../components/provider-option.svelte';
 	import type { FSNode, FileData, ProviderScheme, ISupportedUrl } from '../types';
 	import type { IFileProvider } from '../providers';
-	import { IPFSProvider, MFSProvider, NPMProvider } from '../providers';
+	import { IPFSProvider, NPMProvider } from '../providers';
 	import { detectFile, parseUrl, reprUrl, relpath } from '../util';
 
 	const QS_ROOT = 'r';
@@ -15,7 +15,6 @@
 
 	const providerFactories = {
 		[IPFSProvider.scheme]: IPFSProvider,
-		[MFSProvider.scheme]: MFSProvider,
 		[NPMProvider.scheme]: NPMProvider,
 	};
 	const providers: Partial<Record<ProviderScheme, IFileProvider>> = {};

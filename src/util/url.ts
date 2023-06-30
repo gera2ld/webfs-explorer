@@ -3,18 +3,13 @@ import type { ISupportedUrl } from '../types';
 
 export function parseUrl(url: string): ISupportedUrl {
 	const data = new URL(url);
-	if (data.protocol === 'ipfs:' && data.host === 'mfs') {
-		// ipfs://mfs[/path/to/file]
-		return {
-			provider: 'ipfs-mfs',
-			pathname: data.pathname,
-		};
-	}
 	if (['ipfs:', 'ipns:'].includes(data.protocol)) {
 		// ipfs://CID[/path/to/file]
 		// ipns://www.example.com[/path/to/file]
 		if (!data.host) throw new Error('Invalid IPFS URL');
-		const pathname = ['/', data.protocol.slice(0, -1), '/', data.host, data.pathname].join('');
+		const pathname = [data.protocol.slice(0, -1), data.host, ...data.pathname.split('/')]
+			.filter(Boolean)
+			.join('/');
 		return {
 			provider: 'ipfs',
 			pathname,
@@ -33,9 +28,8 @@ export function parseUrl(url: string): ISupportedUrl {
 }
 
 export function reprUrl(data: ISupportedUrl) {
-	if (data.provider === 'ipfs-mfs') return `ipfs://mfs${data.pathname}`;
 	if (data.provider === 'ipfs') {
-		const [, protocol, host, ...rest] = data.pathname.split('/');
+		const [protocol, host, ...rest] = data.pathname.split('/');
 		return `${protocol}://${host}/${rest.join('/')}`;
 	}
 	if (data.provider === 'npm') {
