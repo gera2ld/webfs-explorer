@@ -81,7 +81,7 @@
 			loading = false;
 		}
 		rootUrl = provider.data;
-		inputPath = rootUrl?.pathname ?? '';
+		inputPath = rootUrl ? reprUrl(rootUrl) : '';
 	}
 
 	async function openPath(url: string, activePath: string) {
@@ -91,7 +91,6 @@
 
 	async function handleUpdate(updates?: Record<string, string>) {
 		const data = provider.update({
-			pathname: inputPath,
 			...updates,
 		});
 		if (!data) return;
@@ -174,11 +173,11 @@
 		}
 	}
 
-	let timer: NodeJS.Timeout;
+	let timer: number;
 	function showMessage(content: string, type: 'info' | 'error' = 'info') {
 		message = { type, content };
 		clearTimeout(timer);
-		timer = setTimeout(() => {
+		timer = window.setTimeout(() => {
 			message = null;
 		}, 2000);
 	}
@@ -270,14 +269,9 @@
 
 <div class="w-screen h-screen flex flex-col">
 	<header class="flex border-b border-zinc-400 px-4 py-2">
-		<form on:submit|preventDefault={() => handleUpdate()}>
-			<select bind:value={providerScheme}>
-				{#each Object.keys(providerFactories) as scheme}
-					<option>{scheme}</option>
-				{/each}
-			</select>
+		<form on:submit|preventDefault={() => openPath(inputPath, '')}>
 			<Icon icon="tabler:prompt" />
-			<input class="w-[400px]" bind:value={inputPath} />
+			<input class="w-[500px]" bind:value={inputPath} />
 			<button type="submit" title="Go" class="mr-4"><Icon icon="bx:rocket" /></button>
 			{#each provider.options as option}
 				<ProviderOption className="mr-4" data={rootUrl} props={option} onUpdate={handleUpdate} />
@@ -294,7 +288,7 @@
 				URL
 			</button>
 		{/if}
-		<a href="https://github.com/gera2ld/webfs-explorer" target="_blank">
+		<a class="ml-2" href="https://github.com/gera2ld/webfs-explorer" target="_blank">
 			<Icon icon="bi:github" />
 		</a>
 	</header>

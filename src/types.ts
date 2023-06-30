@@ -2,8 +2,8 @@ export type ProviderScheme = 'ipfs' | 'ipfs-mfs' | 'npm';
 
 export interface ISupportedUrl {
 	provider: ProviderScheme;
+	host?: string;
 	pathname: string;
-	query?: Record<string, string>;
 }
 
 export interface FSNode {

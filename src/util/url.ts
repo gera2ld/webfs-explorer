@@ -1,50 +1,45 @@
+import { URL } from 'whatwg-url';
 import type { ISupportedUrl } from '../types';
 
 export function parseUrl(url: string): ISupportedUrl {
 	const data = new URL(url);
-	const pathname = data.pathname.replace(/^\/\//, '');
+	if (data.protocol === 'ipfs:' && data.host === 'mfs') {
+		// ipfs://mfs[/path/to/file]
+		return {
+			provider: 'ipfs-mfs',
+			pathname: data.pathname,
+		};
+	}
 	if (['ipfs:', 'ipns:'].includes(data.protocol)) {
-		// ipfs:///path/to/file
-		// ipfs:/path/to/file
-		if (pathname.startsWith('/')) {
-			return {
-				provider: 'ipfs-mfs',
-				pathname,
-			};
-		}
-		// ipfs://CID
-		// ipfs:CID
+		// ipfs://CID[/path/to/file]
+		// ipns://www.example.com[/path/to/file]
+		if (!data.host) throw new Error('Invalid IPFS URL');
+		const pathname = ['/', data.protocol.slice(0, -1), '/', data.host, data.pathname].join('');
 		return {
 			provider: 'ipfs',
-			pathname: `/${data.protocol.slice(0, -1)}/${pathname}`,
+			pathname,
 		};
 	}
 	if (data.protocol === 'npm:') {
-		// npm:@gera2ld/tarjs
-		// npm:@gera2ld/tarjs@latest?registry=registry.npmmirror.com
-		const query = [...data.searchParams.entries()].reduce((prev, [key, value]) => {
-			prev[key] = value;
-			return prev;
-		}, {} as Record<string, string>);
+		// npm:[//registry.npmmirror.com][/][@gera2ld/]tarjs[@latest][/path/to/file]
+		const pathname = data.pathname.replace(/^\/?/, '');
 		return {
 			provider: 'npm',
+			host: data.host || '',
 			pathname,
-			query,
 		};
 	}
 	throw new Error('Unsupported URL');
 }
 
 export function reprUrl(data: ISupportedUrl) {
-	if (data.provider === 'ipfs-mfs') return `ipfs:${data.pathname}`;
+	if (data.provider === 'ipfs-mfs') return `ipfs://mfs${data.pathname}`;
 	if (data.provider === 'ipfs') {
-		const [, protocol, ...rest] = data.pathname.split('/');
-		return `${protocol}:${rest.join('/')}`;
+		const [, protocol, host, ...rest] = data.pathname.split('/');
+		return `${protocol}://${host}/${rest.join('/')}`;
 	}
 	if (data.provider === 'npm') {
-		const query = Object.entries(data.query || []).filter(([, value]) => value);
-		const qs = new URLSearchParams(query).toString();
-		return `npm:${data.pathname}${qs ? '?' : ''}${qs}`;
+		return `npm://${data.host}/${data.pathname}`;
 	}
 	throw new Error('Unsupported URL');
 }

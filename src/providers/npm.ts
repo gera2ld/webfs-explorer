@@ -60,7 +60,7 @@ export class NPMProvider extends IFileProvider {
 
 	private async _loadDataOnce() {
 		if (this.data) {
-			let registry = this.data.query?.registry || DEFAULT_REGISTRY;
+			let registry = this.data.host || DEFAULT_REGISTRY;
 			if (!registry.includes('://')) registry = `https://${registry}`;
 			const { name: pkgName, version: versionName } = parsePkgVersion(this.data.pathname);
 			const metaUrl = `${registry}/${pkgName}`;
@@ -120,7 +120,7 @@ export class NPMProvider extends IFileProvider {
 			name: 'registry',
 			label: 'Registry:',
 			data: async () => ({
-				value: this.data?.query?.registry || DEFAULT_REGISTRY,
+				value: this.data?.host || DEFAULT_REGISTRY,
 				options: DEFAULT_REGISTRIES,
 			}),
 		};
@@ -133,20 +133,13 @@ export class NPMProvider extends IFileProvider {
 		);
 		version ??= currentVersion;
 		if (version === 'latest') version = '';
-		registry ??= this.data?.query?.registry || '';
+		registry ??= this.data?.host || '';
 		if (registry.startsWith('https://')) registry = registry.slice(7);
 		if (registry === DEFAULT_REGISTRY) registry = '';
-		const query: Record<string, string> = {
-			...this.data?.query,
-			registry,
-		};
-		Object.entries(query).forEach(([key, value]) => {
-			if (value == '') delete query[key];
-		});
 		const data: ISupportedUrl = {
 			...this.data,
 			provider: NPMProvider.scheme,
-			query,
+			host: registry,
 			pathname: [pkgName, version].filter(Boolean).join('@'),
 		};
 		return data;

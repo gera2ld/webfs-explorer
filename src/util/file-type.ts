@@ -1,3 +1,4 @@
+/* eslint-disable no-fallthrough */
 import isUtf8 from 'isutf8';
 import type { FileData } from '../types';
 
