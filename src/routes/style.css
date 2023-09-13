@@ -1,0 +1,20 @@
+@unocss;
+
+body {
+  @apply bg-white @dark:bg-zinc-800 text-zinc-800 @dark:text-zinc-300;
+}
+a, button {
+  @apply text-blue-400 hover:text-blue-500 @dark:text-blue-500 @dark:hover:text-blue-400;
+}
+button {
+  @apply bg-transparent;
+}
+select {
+  @apply bg-transparent border-b border-zinc-300;
+}
+input {
+  @apply bg-transparent border-b border-zinc-300 text-inherit;
+}
+.iconify {
+  @apply inline-block;
+}
