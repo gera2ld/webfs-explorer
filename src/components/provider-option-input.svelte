@@ -8,6 +8,7 @@
 </script>
 
 <script lang="ts">
+	import Icon from '@iconify/svelte';
 	import type { IProviderInputData, IProviderInputProps, ISupportedUrl } from '../types';
 
 	export let className = '';
@@ -26,7 +27,10 @@
 		({ value, options } = await props.data());
 	}
 
-	function handleUpdate() {
+	function handleClick() {
+		const newValue = prompt(props.label, value);
+		if (newValue == null) return;
+		value = newValue;
 		onUpdate({
 			[props.name]: value,
 		});
@@ -38,12 +42,8 @@
 		<span>{props.label}</span>
 	{/if}
 
-	<input bind:value list={options ? id : null} on:change={handleUpdate} />
-	{#if options}
-		<datalist {id}>
-			{#each options as item}
-				<option>{item}</option>
-			{/each}
-		</datalist>
-	{/if}
+	<input {value} readonly />
+	<a href="#" on:click={handleClick}>
+		<Icon icon="solar:pen-linear" />
+	</a>
 </label>
