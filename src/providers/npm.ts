@@ -202,9 +202,8 @@ export class NPMProvider extends IFileProvider {
 async function loadTarball(buffer: ArrayBuffer) {
 	const [pako, { TarReader }] = await Promise.all([import('pako'), import('@gera2ld/tarjs')]);
 	const tar = pako.inflate(buffer);
-	const reader = new TarReader();
-	const items = await reader.readFile(tar);
-	const files = items.map((item) => ({
+	const reader = await TarReader.load(tar);
+	const files = reader.fileInfos.map((item) => ({
 		...item,
 		name: item.name.replace(/^package\//, ''),
 		content: reader.getFileBlob(item.name),
