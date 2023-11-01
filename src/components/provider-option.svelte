@@ -9,8 +9,10 @@
 	export let onUpdate: (data: Record<string, string>) => void;
 </script>
 
-{#if props.type === 'input'}
-	<ProviderOptionInput {className} {data} {props} {onUpdate} />
-{:else if props.type === 'select'}
-	<ProviderOptionSelect {className} {data} {props} {onUpdate} />
-{/if}
+<div class="inline-block whitespace-nowrap">
+	{#if props.type === 'input'}
+		<ProviderOptionInput {className} {data} {props} {onUpdate} />
+	{:else if props.type === 'select'}
+		<ProviderOptionSelect {className} {data} {props} {onUpdate} />
+	{/if}
+</div>
