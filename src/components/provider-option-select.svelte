@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { IProviderSelectData, IProviderSelectProps, ISupportedUrl } from '../types';
+	import type { IProviderSelectData, IProviderSelectProps } from '../types';
 
 	export let className = '';
-	export let data: ISupportedUrl | undefined;
+	export let data: string | undefined;
 	export let props: IProviderSelectProps;
 	export let onUpdate: (data: Record<string, string>) => void;
 

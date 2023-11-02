@@ -9,10 +9,10 @@
 
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import type { IProviderInputData, IProviderInputProps, ISupportedUrl } from '../types';
+	import type { IProviderInputData, IProviderInputProps } from '../types';
 
 	export let className = '';
-	export let data: ISupportedUrl | undefined;
+	export let data: string | undefined;
 	export let props: IProviderInputProps;
 	export let onUpdate: (data: Record<string, string>) => void;
 
@@ -43,7 +43,7 @@
 	{/if}
 
 	<input {value} readonly />
-	<a href="#" on:click={handleClick}>
+	<button on:click|preventDefault={handleClick}>
 		<Icon icon="solar:pen-linear" />
-	</a>
+	</button>
 </label>

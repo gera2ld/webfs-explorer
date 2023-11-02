@@ -52,9 +52,9 @@ export class NPMProvider extends IFileProvider {
 
 	options = [this._getVersionInfo(), this._getRegistryInfo()];
 
-	async setData(data: ISupportedUrl) {
+	setData(data: ISupportedUrl) {
 		this.data = data;
-		await this._loadData(true);
+		this._loadData(true);
 	}
 
 	private async _loadDataOnce() {
@@ -128,7 +128,7 @@ export class NPMProvider extends IFileProvider {
 	update(options: Record<string, string>) {
 		let { version, registry } = options;
 		const { name: pkgName, version: currentVersion } = parsePkgVersion(
-			options.pathname ?? this.data?.pathname ?? ''
+			options.pathname ?? this.data?.pathname ?? '',
 		);
 		version ??= currentVersion;
 		if (version === 'latest') version = '';
@@ -188,7 +188,7 @@ export class NPMProvider extends IFileProvider {
 	async readDir(filePath: string) {
 		const { dirMap } = await this._loadData();
 		const files = await Promise.all(
-			Array.from(dirMap.get(filePath) || [], (name) => this._internalStat(name))
+			Array.from(dirMap.get(filePath) || [], (name) => this._internalStat(name)),
 		);
 		files.sort((a, b) => {
 			const keyA = a.type[0] + a.name;
@@ -229,13 +229,13 @@ async function loadTarball(buffer: ArrayBuffer) {
 }
 
 async function loadTarballByUrl(url: string) {
-	const res = await fetch(url);
+	const res = await fetch(url, { mode: 'cors' });
 	const buffer = await res.arrayBuffer();
 	return await loadTarball(buffer);
 }
 
 async function loadJson<T = unknown>(url: string) {
-	const resp = await fetch(url);
+	const resp = await fetch(url, { mode: 'cors' });
 	const data = (await resp.json()) as T;
 	if (!resp.ok) throw { resp, data };
 	return data;

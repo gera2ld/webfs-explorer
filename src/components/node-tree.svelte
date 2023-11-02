@@ -24,7 +24,7 @@
 			path: `!loading!${path}`,
 			cid: '',
 			name: 'Loading...',
-			size: 0,
+			size: 0n,
 			parent: active,
 		};
 	}
@@ -89,7 +89,7 @@
 			type,
 			path: '!new!',
 			name: '',
-			size: 0,
+			size: 0n,
 			parent: active,
 		};
 		context = {
@@ -106,7 +106,11 @@
 
 	function handleActivate(node: TreeNode) {
 		if (context?.node === node) return;
-		if (['file', 'directory'].includes(node.type)) dispatch('setActive', node);
+		if (node.type === 'directory' && node.path === active?.path) {
+			dispatch('toggle');
+		} else if (['file', 'directory'].includes(node.type)) {
+			dispatch('setActive', node.path);
+		}
 	}
 
 	$: if (action) handleAction();

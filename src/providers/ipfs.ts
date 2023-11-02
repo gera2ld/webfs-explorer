@@ -84,7 +84,7 @@ export class IPFSProvider extends IFileProvider {
 					size,
 					path: childPath,
 				};
-			})
+			}),
 		);
 		return children;
 	}

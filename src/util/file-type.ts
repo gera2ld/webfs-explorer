@@ -20,7 +20,7 @@ function detectTextFile(name: string, content: string) {
 	const suffix = name.match(/.\.(\w+)$/)?.[1]?.toLowerCase();
 	result.language = rules.find(
 		([, suffixRule, contentRule]) =>
-			(suffix && suffixRule.test(suffix)) || contentRule?.test(content)
+			(suffix && suffixRule.test(suffix)) || contentRule?.test(content),
 	)?.[0];
 	return result;
 }
