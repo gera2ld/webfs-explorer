@@ -73,7 +73,12 @@ derived(
 		let fileData: FileData;
 		if ($activeNode.type === 'directory') {
 			fileData = { type: 'directory', content: null };
-			loadChildren($provider, $activeNode);
+			loadChildren($provider, $activeNode).then((justLoaded) => {
+				if (isValid() && justLoaded) {
+					$activeNode.expand = true;
+					activeNode.set($activeNode);
+				}
+			});
 		} else {
 			const content = await $provider.readFile($activeNode.path);
 			fileData = detectFile($activeNode.name, content);
