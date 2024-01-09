@@ -1,10 +1,10 @@
 import { derived, writable } from 'svelte/store';
-import { type IFileProvider, getProvider } from '../providers';
+import { getProvider, type IFileProvider } from '../providers';
 import type { FSNode, FileData, ISupportedUrl } from '../types';
-import { keepLast } from './util';
+import { relpath } from './base';
 import { detectFile } from './file-type';
 import { parseUrl, reprUrl } from './url';
-import { relpath } from './base';
+import { keepLast } from './util';
 
 export const loading = writable(false);
 export const rootUrl = writable<string>();
@@ -21,15 +21,16 @@ const parsedUrl = derived(rootUrl, ($rootUrl) => {
 		// ignore
 	}
 });
-export const provider = derived(parsedUrl, ($parsedUrl) =>
-	$parsedUrl ? getProvider($parsedUrl.provider) : undefined,
+export const provider = derived(
+	parsedUrl,
+	($parsedUrl) => $parsedUrl && getProvider($parsedUrl.provider),
 );
 
 derived(
-	[rootUrl, provider],
-	keepLast((isValid) => async ([$rootUrl, $provider]) => {
-		if (!$provider) return;
-		$provider.setData(parseUrl($rootUrl));
+	[provider, parsedUrl],
+	keepLast((isValid) => async ([$provider, $parsedUrl]) => {
+		if (!$provider || !$parsedUrl) return;
+		$provider.setData($parsedUrl);
 		rootNode.set(undefined);
 		loading.set(true);
 		try {
@@ -116,8 +117,8 @@ const QS_PATH = 'p';
 
 export function onHashChange() {
 	const params = new URLSearchParams(window.location.hash.slice(1));
-	const url = params.get(QS_ROOT) ?? 'npm:@gera2ld/tarjs';
-	const path = params.get(QS_PATH) ?? '';
+	const url = params.get(QS_ROOT) || 'npm:@gera2ld/tarjs';
+	const path = params.get(QS_PATH) || '';
 	const normalizedUrl = reprUrl(parseUrl(url));
 	rootUrl.set(normalizedUrl);
 	activePath.set(path);

@@ -3,7 +3,7 @@ import { IPFSProvider } from './ipfs';
 import { NPMProvider } from './npm';
 import type { IFileProvider } from './base';
 
-export { IPFSProvider, NPMProvider, IFileProvider };
+export { IPFSProvider, NPMProvider, type IFileProvider };
 
 export const providerFactories = [IPFSProvider, NPMProvider];
 

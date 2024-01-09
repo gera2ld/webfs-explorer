@@ -7,7 +7,7 @@ export const loadIpfs = memoize(async () => {
 	const helia = await createHelia();
 	return {
 		helia,
-		ipns: ipns(helia),
+		ipns: ipns(helia, {}),
 		fs: unixfs(helia),
 	};
 });
