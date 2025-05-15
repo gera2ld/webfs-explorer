@@ -1,11 +1,10 @@
 import type { ProviderScheme } from '../types';
-import { IPFSProvider } from './ipfs';
-import { NPMProvider } from './npm';
 import type { IFileProvider } from './base';
+import { NPMProvider } from './npm';
 
-export { IPFSProvider, NPMProvider, type IFileProvider };
+export { NPMProvider, type IFileProvider };
 
-export const providerFactories = [IPFSProvider, NPMProvider];
+export const providerFactories = [NPMProvider];
 
 const providers: Partial<Record<ProviderScheme, IFileProvider>> = {};
 

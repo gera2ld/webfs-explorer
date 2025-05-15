@@ -1,33 +1,32 @@
-<script context="module">
-	let index = 0;
-
-	function getId() {
-		index += 1;
-		return `input-${index}`;
-	}
-</script>
-
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import type { IProviderInputData, IProviderInputProps } from '../types';
+	import { untrack } from 'svelte';
+	import type { IProviderInputProps } from '../types';
 
-	export let className = '';
-	export let data: string | undefined;
-	export let props: IProviderInputProps;
-	export let onUpdate: (data: Record<string, string>) => void;
+	let {
+		class: className = '',
+		data,
+		props,
+		onUpdate,
+	}: {
+		class?: string;
+		data?: string;
+		props: IProviderInputProps;
+		onUpdate: (data: Record<string, string>) => void;
+	} = $props();
 
-	let value = '';
-	let options: IProviderInputData['options'] = [];
+	let value = $state('');
 
-	const id = getId();
-
-	$: if (data) loadProps();
+	$effect(() => {
+		if (data) untrack(loadProps);
+	});
 
 	async function loadProps() {
-		({ value, options } = await props.data());
+		({ value } = await props.data());
 	}
 
-	function handleClick() {
+	function handleClick(e: MouseEvent) {
+		e.preventDefault();
 		const newValue = prompt(props.label, value);
 		if (newValue == null) return;
 		value = newValue;
@@ -43,7 +42,7 @@
 	{/if}
 
 	<input {value} readonly />
-	<button on:click|preventDefault={handleClick}>
+	<button onclick={handleClick}>
 		<Icon icon="solar:pen-linear" />
 	</button>
 </label>

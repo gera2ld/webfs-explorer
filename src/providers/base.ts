@@ -16,25 +16,23 @@ export abstract class IFileProvider {
 	options: IProviderProps[] = [];
 
 	update(options: Record<string, string>): ISupportedUrl | void {
-		let { pathname } = options;
-		if (/^\/ip[fn]s\//.test(pathname)) pathname = `${pathname.slice(1, 5)}:${pathname.slice(6)}`;
-		else if (!/^[\w-]+:/.test(pathname)) pathname = `ipfs:${pathname}`;
+		const { pathname } = options;
 		return parseUrl(pathname);
 	}
 
-	async writeFile(ipfsPath: string, content: string) {
+	async writeFile(_path: string, _content: string) {
 		throw new Error('Not allowed');
 	}
 
-	async rename(sourcePath: string, filePath: string) {
+	async rename(_sourcePath: string, _targetPath: string) {
 		throw new Error('Not allowed');
 	}
 
-	async delete(ipfsPath: string) {
+	async delete(_path: string) {
 		throw new Error('Not allowed');
 	}
 
-	async mkdir(ipfsPath: string) {
+	async mkdir(_path: string) {
 		throw new Error('Not allowed');
 	}
 }

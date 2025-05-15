@@ -1,15 +1,25 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { IProviderSelectData, IProviderSelectProps } from '../types';
 
-	export let className = '';
-	export let data: string | undefined;
-	export let props: IProviderSelectProps;
-	export let onUpdate: (data: Record<string, string>) => void;
+	let {
+		class: className = '',
+		data,
+		props,
+		onUpdate,
+	}: {
+		class?: string;
+		data?: string;
+		props: IProviderSelectProps;
+		onUpdate: (data: Record<string, string>) => void;
+	} = $props();
 
-	let value = '';
-	let options: IProviderSelectData['options'] = [];
+	let value = $state('');
+	let options = $state<IProviderSelectData['options']>([]);
 
-	$: if (data) loadProps();
+	$effect(() => {
+		if (data) untrack(loadProps);
+	});
 
 	async function loadProps() {
 		({ value, options } = await props.data());
@@ -27,8 +37,8 @@
 		<span>{props.label}</span>
 	{/if}
 
-	<select bind:value on:change={handleUpdate}>
-		{#each options as item}
+	<select bind:value onchange={handleUpdate}>
+		{#each options as item, i (i)}
 			<option value={item.value}>{item.title}</option>
 		{/each}
 	</select>
